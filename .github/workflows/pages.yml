@@ -22,7 +22,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - uses: actions/configure-pages@v5
       - run: bun ci
-      - run: bun run build --base=/flight-sim/
+      - run: bun run build --base=/my-font/
       - uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
