@@ -4,4 +4,10 @@ const useExportLoaded = () => true;
 const loadExport = () => Promise.resolve();
 const LazyExportContent = ExportContent;
 const OfflineSupport = () => null;
-export { preloadExport, useExportLoaded, loadExport, LazyExportContent, OfflineSupport };
+export {
+	preloadExport,
+	useExportLoaded,
+	loadExport,
+	LazyExportContent,
+	OfflineSupport,
+};

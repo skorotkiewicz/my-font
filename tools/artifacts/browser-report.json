@@ -1,0 +1,18 @@
+{
+  "passed": [
+    "drawing",
+    "undo",
+    "clear",
+    "glyph picker",
+    "keyboard navigation",
+    "adjust dialog",
+    "OTF download",
+    "WOFF2 download",
+    "project table",
+    "picture panel",
+    "IndexedDB persistence",
+    "mobile layout"
+  ],
+  "exceptions": [],
+  "failedRequests": []
+}

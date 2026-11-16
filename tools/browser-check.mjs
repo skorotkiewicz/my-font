@@ -1,17 +1,48 @@
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync, readFileSync, readdirSync, unlinkSync } from "node:fs";
+import {
+	mkdirSync,
+	writeFileSync,
+	readFileSync,
+	readdirSync,
+	unlinkSync,
+} from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
 const root = path.resolve(import.meta.dirname, "..");
 const artifacts = path.join(import.meta.dirname, "artifacts");
 mkdirSync(artifacts, { recursive: true });
-for(const file of readdirSync(artifacts))if(/\.(otf|woff2)$/.test(file))unlinkSync(path.join(artifacts,file));
-const browser=spawn('chromium',['--headless','--disable-gpu','--remote-debugging-port=0','--user-data-dir='+path.join(import.meta.dirname,'.browser-profile'),'about:blank'],{stdio:['ignore','ignore','pipe']});
-const port=await new Promise((resolve,reject)=>{
- const timer=setTimeout(()=>reject(Error('Chromium did not start')),15000);
- browser.stderr.on('data',chunk=>{const match=String(chunk).match(/DevTools listening on ws:\/\/127\.0\.0\.1:(\d+)/);if(match){clearTimeout(timer);resolve(match[1]);}});
- browser.once('exit',code=>{clearTimeout(timer);reject(Error('Chromium exited: '+code));});
+for (const file of readdirSync(artifacts))
+	if (/\.(otf|woff2)$/.test(file)) unlinkSync(path.join(artifacts, file));
+const browser = spawn(
+	"chromium",
+	[
+		"--headless",
+		"--disable-gpu",
+		"--remote-debugging-port=0",
+		"--user-data-dir=" + path.join(import.meta.dirname, ".browser-profile"),
+		"about:blank",
+	],
+	{ stdio: ["ignore", "ignore", "pipe"] },
+);
+const port = await new Promise((resolve, reject) => {
+	const timer = setTimeout(
+		() => reject(Error("Chromium did not start")),
+		15000,
+	);
+	browser.stderr.on("data", (chunk) => {
+		const match = String(chunk).match(
+			/DevTools listening on ws:\/\/127\.0\.0\.1:(\d+)/,
+		);
+		if (match) {
+			clearTimeout(timer);
+			resolve(match[1]);
+		}
+	});
+	browser.once("exit", (code) => {
+		clearTimeout(timer);
+		reject(Error("Chromium exited: " + code));
+	});
 });
 const target = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, {
 	method: "PUT",
@@ -63,10 +94,23 @@ const evaluate = async (expression) => {
 		);
 	return result.result.value;
 };
-const waitFor = (expression) =>
-	evaluate(
-		`new Promise((resolve,reject)=>{const started=Date.now();const check=()=>{if(${expression})resolve(true);else if(Date.now()-started>15000)reject(Error('Timed out: '+${JSON.stringify(expression)}));else setTimeout(check,50)};check()})`,
-	);
+const waitFor = async (expression) => {
+	const deadline = Date.now() + 15000;
+	while (Date.now() < deadline) {
+		try {
+			if (await evaluate(`Boolean(${expression})`)) return;
+		} catch (error) {
+			if (
+				!/navigated or closed|context.*destroyed|Cannot find context/.test(
+					error.message,
+				)
+			)
+				throw error;
+		}
+		await new Promise((resolve) => setTimeout(resolve, 50));
+	}
+	throw Error("Timed out: " + expression);
+};
 const click = async (expression) => {
 	const box = await evaluate(
 		`(()=>{const element=${expression};if(!element)throw Error('Missing click target');const b=element.getBoundingClientRect();return {x:b.x+b.width/2,y:b.y+b.height/2}})()`,
@@ -97,7 +141,10 @@ try {
 	await send("Page.enable");
 	await send("Runtime.enable");
 	await send("Network.enable");
-	await send('Storage.clearDataForOrigin',{origin:new URL(process.env.APP_URL??'http://127.0.0.1:5175/').origin,storageTypes:'indexeddb'});
+	await send("Storage.clearDataForOrigin", {
+		origin: new URL(process.env.APP_URL ?? "http://127.0.0.1:5175/").origin,
+		storageTypes: "indexeddb",
+	});
 	await send("Browser.setDownloadBehavior", {
 		behavior: "allow",
 		downloadPath: artifacts,
@@ -234,7 +281,12 @@ try {
 	// The OTF contains the project table and must reopen with the saved drawing.
 	const otfBytes = readFileSync(path.join(artifacts, otf));
 	assert.ok(otfBytes.includes(Buffer.from("DUCT")));
-	assert.ok(await evaluate(`import('/src/lib/projectFont.jsx').then(async ({readProjectFont})=>{const bytes=Uint8Array.from(atob(${JSON.stringify(otfBytes.toString('base64'))}),c=>c.charCodeAt(0));const result=await readProjectFont(bytes.buffer);return result.ok&&result.project.glyphs[97].drawings[0].strokes.length>0})`),'OTF project round trip');
+	assert.ok(
+		await evaluate(
+			`import('/src/lib/projectFont.jsx').then(async ({readProjectFont})=>{const bytes=Uint8Array.from(atob(${JSON.stringify(otfBytes.toString("base64"))}),c=>c.charCodeAt(0));const result=await readProjectFont(bytes.buffer);return result.ok&&result.project.glyphs[97].drawings[0].strokes.length>0})`,
+		),
+		"OTF project round trip",
+	);
 	await click(button("Style…"));
 	await waitFor(
 		`document.querySelector('dialog[open]')?.textContent.includes('Colour')||document.querySelector('input[name="picture-paper"]')`,
@@ -246,9 +298,10 @@ try {
 		code: "Escape",
 		windowsVirtualKeyCode: 27,
 	});
+	const previousTimeOrigin = await evaluate("performance.timeOrigin");
 	await send("Page.reload", { ignoreCache: true });
 	await waitFor(
-		`document.querySelector('svg[aria-label^="Drawing area"]')&&!document.body.textContent.includes('Finding your letters')`,
+		`performance.timeOrigin!==${previousTimeOrigin}&&document.readyState==='complete'&&document.querySelector('svg[aria-label^="Drawing area"]')&&!document.body.textContent.includes('Finding your letters')`,
 	);
 	await send("Input.dispatchKeyEvent", {
 		type: "keyDown",
@@ -258,7 +311,9 @@ try {
 	});
 	await waitFor(`document.body.textContent.includes('Write a small a')`);
 	assert.ok(
-		await evaluate(`${canvas}.querySelectorAll('g path[d]:not([d=""])').length>0`),
+		await evaluate(
+			`${canvas}.querySelectorAll('g path[d]:not([d=""])').length>0`,
+		),
 		"drawing restored",
 	);
 	await send("Emulation.setDeviceMetricsOverride", {

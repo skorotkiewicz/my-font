@@ -624,11 +624,30 @@ const plannedNameTaken = (scope, candidate, binding) => {
 	return false;
 };
 // Use the installed motion package, excluding its captured bundled implementation.
-const exportAst=asts.get('CEjkeowH');
-exportAst.program.body=exportAst.program.body.filter(node=>t.isImportDeclaration(node)||node.loc.start.line>=11469||[6,9042].includes(node.loc.start.line));
-exportAst.program.body.unshift(t.importDeclaration([
- ['useReducedMotion','Cf'],['useMotionValue','_f'],['useTransform','bf'],['animate','$f'],['useIsPresent','Qu'],['MotionConfig','_Component11'],['AnimatePresence','_Component0'],['motion','ep']
-].map(([imported,local])=>t.importSpecifier(t.identifier(local),t.identifier(imported))),t.stringLiteral('motion/react')));
+const exportAst = asts.get("CEjkeowH");
+exportAst.program.body = exportAst.program.body.filter(
+	(node) =>
+		t.isImportDeclaration(node) ||
+		node.loc.start.line >= 11469 ||
+		[6, 9042].includes(node.loc.start.line),
+);
+exportAst.program.body.unshift(
+	t.importDeclaration(
+		[
+			["useReducedMotion", "Cf"],
+			["useMotionValue", "_f"],
+			["useTransform", "bf"],
+			["animate", "$f"],
+			["useIsPresent", "Qu"],
+			["MotionConfig", "_Component11"],
+			["AnimatePresence", "_Component0"],
+			["motion", "ep"],
+		].map(([imported, local]) =>
+			t.importSpecifier(t.identifier(local), t.identifier(imported)),
+		),
+		t.stringLiteral("motion/react"),
+	),
+);
 
 // Capture every scope before applying any rename. Names are inferred, not original source names.
 for (const [source, ast] of asts) {
@@ -865,7 +884,22 @@ for (const [source, ast] of asts) {
 				)
 			: [original];
 		for (const node of statements) {
-			const ids = Object.keys(t.getBindingIdentifiers(node));
+			const ids = Object.keys(t.getOuterBindingIdentifiers(node));
+			if (
+				ids.some((name) =>
+					[
+						"characterLabel",
+						"usePackedFont",
+						"useWoff2Font",
+						"warmFontWorker",
+						"BackIcon",
+						"NextIcon",
+						"UndoIcon",
+						"TrashIcon",
+					].includes(name),
+				)
+			)
+				continue;
 			if (source === "BcpSTgJi" && ids.some((name) => ignored.has(name)))
 				continue;
 			if (source === "rX6k7kUM" && ids.includes("n")) continue;
@@ -890,7 +924,7 @@ for (let index = nodes.length - 1; index >= 0; index--) {
 	const entry = nodes[index];
 	if (
 		entry.file === "components/export/ExportSheet" &&
-		!Object.keys(t.getBindingIdentifiers(entry.node)).some((n) =>
+		!Object.keys(t.getOuterBindingIdentifiers(entry.node)).some((n) =>
 			["EmptyExport", "ExportSheet"].includes(n),
 		)
 	)
@@ -989,7 +1023,7 @@ for (const name of [
 	for (const [file, statements] of modules)
 		if (
 			statements.some((node) =>
-				Object.hasOwn(t.getBindingIdentifiers(node), name),
+				Object.hasOwn(t.getOuterBindingIdentifiers(node), name),
 			)
 		)
 			exported.get(file).add(name);
@@ -1033,9 +1067,37 @@ for (const [file, statements] of modules) {
 			),
 		),
 	];
+	const fileAst = t.file(t.program(body));
+	traverse(fileAst, {
+		ObjectProperty(p) {
+			if (
+				!p.node.computed &&
+				t.isIdentifier(p.node.key) &&
+				t.isIdentifier(p.node.value) &&
+				p.node.key.name === p.node.value.name
+			)
+				p.node.shorthand = true;
+		},
+		JSXAttribute(p) {
+			if (t.isJSXExpressionContainer(p.node.value)) {
+				const value = tagName(p.node.value.expression);
+				if (value !== undefined && !/["&\n\r]/.test(value))
+					p.node.value = t.stringLiteral(value);
+			}
+		},
+		SequenceExpression(p) {
+			if (
+				p.node.expressions.length === 2 &&
+				t.isNumericLiteral(p.node.expressions[0], { value: 0 }) &&
+				t.isMemberExpression(p.node.expressions[1]) &&
+				t.isIdentifier(p.node.expressions[1].object, { name: "React" })
+			)
+				p.replaceWith(p.node.expressions[1]);
+		},
+	});
 	const target = path.join(output, file + ".jsx");
 	mkdirSync(path.dirname(target), { recursive: true });
-	let code = generate(t.file(t.program(body)), { comments: false }).code + "\n";
+	let code = generate(fileAst, { comments: false }).code + "\n";
 	if (file === "lib/fontClient")
 		code = code.replace(
 			"new URL(`/_next/static/workers/68c63b8b-Bl6VHrTP.js`, `${import.meta.url}`)",
@@ -1069,6 +1131,12 @@ for (const file of ["icon.png", "apple-icon.png", "manifest.webmanifest"])
 		path.join(root, "resources", file),
 		path.join(root, "web/public", file),
 	);
+const manifestPath = path.join(root, "web/public/manifest.webmanifest");
+const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+manifest.icons = [
+	{ src: "/icon.png", sizes: "512x512", type: "image/png", purpose: "any" },
+];
+writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
 mkdirSync(path.join(root, "web/public/workers"), { recursive: true });
 writeFileSync(
 	path.join(root, "web/public/workers/font.worker.js"),
@@ -1087,13 +1155,20 @@ writeFileSync(
 		{
 			sources: sourceNames.map((source) => ({
 				source: source + ".js",
-				modules: partitions[source].map(([, file]) => file),
+				modules: [
+					...new Set(
+						nodes
+							.filter((entry) => entry.source === source)
+							.map((entry) => entry.file),
+					),
+				],
 			})),
 			excluded: [
 				"React and React DOM bundles",
 				"Vinext router, RSC transport and client registry",
 				"Route manifest and layout segment provider",
 				"Captured service worker registration",
+				"Captured motion library, replaced by motion/react",
 			],
 			additionalRecovered: [
 				"CEjkeowH.js export panel",
