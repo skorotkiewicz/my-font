@@ -60,20 +60,28 @@ function glyphProfile(codepoint, contours, metrics) {
 	const { min: leftEdges, max: rightEdges } = contourProfile(contours);
 	const leftDistances = leftEdges.map((edgeX) => edgeX - xMin);
 	const rightDistances = rightEdges.map((edgeX) => xMax - edgeX);
-	const nearbyRightDistances = rightDistances.map((_unusedDistance, rowIndex) => {
-		let minimumDistance = Infinity;
-		for (
-			let neighborRow = Math.max(0, rowIndex - 3);
-			neighborRow <= Math.min(179, rowIndex + 3);
-			neighborRow++
-		) {
-			minimumDistance = Math.min(minimumDistance, rightDistances[neighborRow]);
-		}
-		return minimumDistance;
-	});
+	const nearbyRightDistances = rightDistances.map(
+		(_unusedDistance, rowIndex) => {
+			let minimumDistance = Infinity;
+			for (
+				let neighborRow = Math.max(0, rowIndex - 3);
+				neighborRow <= Math.min(179, rowIndex + 3);
+				neighborRow++
+			) {
+				minimumDistance = Math.min(
+					minimumDistance,
+					rightDistances[neighborRow],
+				);
+			}
+			return minimumDistance;
+		},
+	);
 	const whiteForSide = (distances, bandHeight) => {
 		let totalWhite = 0;
-		const [firstRow, lastRow] = [profileRowIndex(0), profileRowIndex(bandHeight)];
+		const [firstRow, lastRow] = [
+			profileRowIndex(0),
+			profileRowIndex(bandHeight),
+		];
 		for (let sampleRow = firstRow; sampleRow <= lastRow; sampleRow++) {
 			totalWhite += Math.min(distances[sampleRow], 110) ** 2 / 110;
 		}

@@ -67,7 +67,10 @@ function simplifyPolygon(polygon, tolerance = 1.5) {
 			[splitIndex, maximumDistance] = [pointIndex, distanceFromStart];
 		}
 	});
-	const firstArc = simplifyPolyline(polygon.slice(0, splitIndex + 1), tolerance);
+	const firstArc = simplifyPolyline(
+		polygon.slice(0, splitIndex + 1),
+		tolerance,
+	);
 	const secondArc = simplifyPolyline(
 		[...polygon.slice(splitIndex), polygon[0]],
 		tolerance,
