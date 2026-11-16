@@ -1,8 +1,5 @@
 {
-  "error": "Error: Timed out: document.querySelector('textarea')&&[...document.querySelectorAll('button')].some(b=>b.textContent.includes('Download WOFF2')&&!b.disabled)\n    at waitFor (file:///home/mod/Dev/Bun/my-font/tools/browser-check.mjs:112:8)\n    at async file:///home/mod/Dev/Bun/my-font/tools/browser-check.mjs:258:2",
-  "exceptions": [
-    "Error: Failed to fetch dynamically imported module: http://127.0.0.1:5175/workers/woff2.js\n    at fontWorker.onmessage (http://127.0.0.1:5175/src/lib/fontClient.jsx:22:27)",
-    "Error: Failed to fetch dynamically imported module: http://127.0.0.1:5175/workers/woff2.js\n    at fontWorker.onmessage (http://127.0.0.1:5175/src/lib/fontClient.jsx:22:27)"
-  ],
+  "error": "Error: Error: Missing click target\n    at <anonymous>:1:99\n    at <anonymous>:1:212\n    at evaluate (file:///home/mod/Dev/Bun/my-font/tools/browser-check.mjs:91:9)\n    at async click (file:///home/mod/Dev/Bun/my-font/tools/browser-check.mjs:115:14)\n    at async file:///home/mod/Dev/Bun/my-font/tools/browser-check.mjs:237:2",
+  "exceptions": [],
   "failures": []
 }

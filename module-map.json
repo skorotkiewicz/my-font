@@ -69,6 +69,17 @@
 				"hooks/usePictureDownload",
 				"components/export/ExportContent"
 			]
+		},
+		{
+			"source": "font-worker.js",
+			"modules": [
+				"lib/font/sfnt.js",
+				"lib/font/build-font.js",
+				"lib/font/contours.js",
+				"lib/font/kerning.js",
+				"lib/font/pack-project.js",
+				"workers/font.worker.js"
+			]
 		}
 	],
 	"excluded": [
@@ -83,5 +94,6 @@
 		"Dmzpm_-y.js download helpers",
 		"font-worker.js",
 		"woff2.js"
-	]
+	],
+	"workerPackages": ["opentype.js", "polygon-clipping", "woff2-encoder"]
 }

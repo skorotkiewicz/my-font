@@ -1,3 +1,4 @@
+import { recoverWorker } from "./recover-worker.mjs";
 import { recoverFonts } from "./recover-assets.mjs";
 import {
 	readFileSync,
@@ -1126,7 +1127,7 @@ for (const [file, statements] of modules) {
 	if (file === "lib/fontClient")
 		code = code.replace(
 			"new URL(`/_next/static/workers/68c63b8b-Bl6VHrTP.js`, `${import.meta.url}`)",
-			'new URL("workers/font.worker.js", new URL(import.meta.env.BASE_URL, location.origin))',
+			'new URL("../workers/font.worker.js", import.meta.url)',
 		);
 	if (checkOnly) {
 		const clean = (source) => {
@@ -1196,18 +1197,6 @@ manifest.icons = [
 	{ src: "/icon.png", sizes: "512x512", type: "image/png", purpose: "any" },
 ];
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
-mkdirSync(path.join(root, "web/public/workers"), { recursive: true });
-writeFileSync(
-	path.join(root, "web/public/workers/font.worker.js"),
-	readFileSync(
-		path.join(evidence, "additional/font-worker.js"),
-		"utf8",
-	).replaceAll("./f11c1bd6-DgeBPDJU.js", "./woff2.js"),
-);
-copyFileSync(
-	path.join(evidence, "additional/woff2.js"),
-	path.join(root, "web/public/workers/woff2.js"),
-);
 writeFileSync(
 	path.join(root, "module-map.json"),
 	JSON.stringify(
@@ -1247,3 +1236,5 @@ console.log(
 	modules.size,
 	"application modules.",
 );
+
+recoverWorker();

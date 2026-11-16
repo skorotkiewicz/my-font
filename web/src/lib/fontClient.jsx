@@ -9,10 +9,7 @@ function getFontWorker() {
 		return fontWorker;
 	}
 	fontWorker = new Worker(
-		new URL(
-			"workers/font.worker.js",
-			new URL(import.meta.env.BASE_URL, location.origin),
-		),
+		new URL("../workers/font.worker.js", import.meta.url),
 		{
 			type: `module`,
 		},
