@@ -1,0 +1,7 @@
+{ example map
+	"map": {
+		"Be": "EventDispatcher",
+		"H": "Vector2",
+		"U": "Matrix3"
+	}
+}

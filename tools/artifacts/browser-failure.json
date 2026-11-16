@@ -1,0 +1,5 @@
+{
+  "error": "AssertionError [ERR_ASSERTION]: drawing restored\n    at file:///home/mod/Dev/Bun/my-font/tools/browser-check.mjs:260:9",
+  "exceptions": [],
+  "failures": []
+}
