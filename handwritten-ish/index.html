@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#171b32">
+  <meta name="description" content="A delightfully unnecessary playground for your very own handwriting font.">
+  <title>Handwritten-ish — The Human Font Experiment</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">✳</span> HANDWRITTEN<span class="brand-ish">-ish</span></div>
+      <span class="issue">EST. FIVE MINUTES AGO · 100% HUMAN-ISH</span>
+    </header>
+
+    <main>
+      <div class="intro">
+        <div>
+          <p class="eyebrow">THE EXTREMELY OFFICIAL HANDWRITING LAB</p>
+          <h1>Your handwriting.<br><em>Now with Ctrl+Z.</em></h1>
+          <p class="subtitle">Type something ridiculous. It'll look like you wrote it. The future is weird.</p>
+        </div>
+        <div class="seal" aria-label="Certified suspiciously handwritten"><span>CERTIFIED</span><strong>100%</strong><span>YOU-ISH</span></div>
+      </div>
+
+      <section class="desk" aria-labelledby="paper-heading" id="desk">
+        <div class="toolbar">
+          <div class="toolgroup" aria-label="Ink color">
+            <span class="tool-label">INK</span>
+            <button class="swatch selected" type="button" data-ink="#243d77" style="--swatch:#243d77" title="Blue ink" aria-label="Blue ink" aria-pressed="true"></button>
+            <button class="swatch" type="button" data-ink="#343038" style="--swatch:#343038" title="Black ink" aria-label="Black ink" aria-pressed="false"></button>
+            <button class="swatch" type="button" data-ink="#b34448" style="--swatch:#b34448" title="Red ink" aria-label="Red ink" aria-pressed="false"></button>
+            <button class="swatch" type="button" data-ink="#42694f" style="--swatch:#42694f" title="Green ink" aria-label="Green ink" aria-pressed="false"></button>
+          </div>
+          <div class="toolgroup sizegroup">
+            <label class="tool-label" for="font-size">SIZE</label>
+            <input id="font-size" type="range" min="20" max="70" value="38" aria-label="Handwriting size">
+            <output id="size-value" for="font-size">38px</output>
+          </div>
+          <button class="tool-button" id="font-button" type="button">↥ Load my font</button>
+          <input class="visually-hidden" id="font-file" type="file" accept=".woff2,.woff,font/woff2,font/woff">
+        </div>
+
+        <div class="paper" id="paper">
+          <div class="paper-head"><span id="paper-heading">DEAR INTERNET,</span><span class="paper-date" id="paper-date"></span></div>
+          <label for="handwriting" class="visually-hidden">Write your handwritten note</label>
+          <textarea id="handwriting" spellcheck="false" placeholder="Dear diary, today I invented a font…">Dear future archaeologists,
+
+If you can read this, it means my handwriting has officially become a computer font.
+
+I have achieved immortality.
+
+Or at least .woff2-ality.
+
+Sincerely,
+A person with questionable penmanship</textarea>
+          <div class="paper-bottom"><span>✳ NO TREES WERE HARMED (THIS TIME)</span><span class="scribble">xoxo</span></div>
+          <span class="paper-tape tape-left" aria-hidden="true"></span>
+          <span class="paper-tape tape-right" aria-hidden="true"></span>
+        </div>
+        <div class="desk-footer">
+          <p class="font-state" id="font-state" role="status">Looking for <code>MyHand-Regular.woff2</code>…</p>
+          <span class="drop-tip">Drop a .woff2 here to test it instantly</span>
+        </div>
+      </section>
+
+      <section class="actions" aria-label="Note actions">
+        <div class="action-buttons">
+          <button id="random" class="button primary" type="button">✦ Inspire nonsense</button>
+          <button id="copy" class="button" type="button">Copy text</button>
+          <button id="download" class="button" type="button">Save .txt</button>
+          <button id="clear" class="button subtle" type="button">Clear</button>
+        </div>
+        <div class="stats"><span id="word-count">0 words</span><span class="stats-divider">·</span><span id="char-count">0 characters</span></div>
+      </section>
+      <p class="footer-note">Made with pixels, questionable judgment, and <strong>your handwriting.</strong> Works entirely offline. No cloud, no cookies, no handwriting police.</p>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

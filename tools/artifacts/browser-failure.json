@@ -1,5 +1,0 @@
-{
-  "error": "Error: Error: Missing click target\n    at <anonymous>:1:99\n    at <anonymous>:1:212\n    at evaluate (file:///home/mod/Dev/Bun/my-font/tools/browser-check.mjs:91:9)\n    at async click (file:///home/mod/Dev/Bun/my-font/tools/browser-check.mjs:115:14)\n    at async file:///home/mod/Dev/Bun/my-font/tools/browser-check.mjs:237:2",
-  "exceptions": [],
-  "failures": []
-}

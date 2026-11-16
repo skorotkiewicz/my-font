@@ -7,7 +7,7 @@
 		"dev": "vite",
 		"build": "vite build",
 		"fmt": "biome format --write",
-		"lint": "biome lint --write --max-diagnostics 1000",
+		"lint": "biome lint --write",
 		"preview": "vite preview"
 	},
 	"dependencies": {
