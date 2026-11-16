@@ -8,6 +8,7 @@
 		"build": "vite build",
 		"fmt": "biome format --write",
 		"lint": "biome lint --write",
+		"lint:unsafe": "biome lint --write --unsafe",
 		"preview": "vite preview"
 	},
 	"dependencies": {

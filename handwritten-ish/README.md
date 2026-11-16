@@ -9,6 +9,7 @@ A tiny, fully offline playground for your own handwriting font.
 Alternatively, use **Load my font** or drag a `.woff2` or `.woff` font file onto the notebook to test it without copying it into the folder. The selected font is temporary and stays local to your browser session.
 
 Files:
+
 - `index.html` — interface
 - `styles.css` — styling, paper and handwriting font
 - `script.js` — typing tools, font loading and jokes
