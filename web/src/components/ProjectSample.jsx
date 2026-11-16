@@ -11,64 +11,63 @@ var sampleCharacters = `hamburgefonstiv`;
 var sampleCount = 14;
 var sampleSpacing = 90;
 function projectSampleLayout(project) {
-	let { place: value, lines: value2 } = alignProject(project);
-	let value3 = (argument) => firstDrawing(project.glyphs[argument]);
-	let value4 = [...sampleCharacters]
-		.map((argument) => argument.charCodeAt(0))
-		.filter(value3);
-	let value5 = (
-		value4.length >= 5 ? value4 : allCodepoints.filter(value3)
+	let { place: placements, lines } = alignProject(project);
+	let drawingForCodepoint = (glyphCodepoint) =>
+		firstDrawing(project.glyphs[glyphCodepoint]);
+	let sampleCodepoints = [...sampleCharacters]
+		.map((character) => character.charCodeAt(0))
+		.filter(drawingForCodepoint);
+	let selectedCodepoints = (
+		sampleCodepoints.length >= 5
+			? sampleCodepoints
+			: allCodepoints.filter(drawingForCodepoint)
 	).slice(0, sampleCount);
-	let value6 = 0;
-	let value7 = [];
-	for (let value9 of value5) {
-		let drawing = value3(value9);
-		let bounds = inkBounds(value9, drawing);
-		let value10 = value.get(value9);
-		if (bounds && value10) {
-			value7.push({
-				cp: value9,
+	let cursorX = 0;
+	let letters = [];
+	for (let glyphCodepoint of selectedCodepoints) {
+		let drawing = drawingForCodepoint(glyphCodepoint);
+		let bounds = inkBounds(glyphCodepoint, drawing);
+		let placement = placements.get(glyphCodepoint);
+		if (bounds && placement) {
+			letters.push({
+				cp: glyphCodepoint,
 				strokes: drawing.strokes,
 				transform: placementTransform(
-					value10,
-					value6 - bounds.xMin * value10.scale,
+					placement,
+					cursorX - bounds.xMin * placement.scale,
 				),
 			});
-			value6 += (bounds.xMax - bounds.xMin) * value10.scale + sampleSpacing;
+			cursorX += (bounds.xMax - bounds.xMin) * placement.scale + sampleSpacing;
 		}
 	}
-	let value8 = 920 - Math.max(value2.ascender, value2.capHeight) - 60;
+	let top = 920 - Math.max(lines.ascender, lines.capHeight) - 60;
 	return {
-		letters: value7,
-		width: Math.max(1, value6 - sampleSpacing),
-		top: value8,
+		letters: letters,
+		width: Math.max(1, cursorX - sampleSpacing),
+		top: top,
 		bottom: 1180,
 	};
 }
-function ProjectSample({ project: argument, label: argument2 }) {
-	let {
-		letters: value,
-		width: value2,
-		top: value3,
-		bottom: value4,
-	} = React.useMemo(() => projectSampleLayout(argument), [argument]);
+function ProjectSample({ project, label }) {
+	let { letters, width, top, bottom } = React.useMemo(
+		() => projectSampleLayout(project),
+		[project],
+	);
 	return (
 		<svg
 			role="img"
-			aria-label={argument2}
-			viewBox={`0 ${value3.toFixed(0)} ${value2.toFixed(0)} ${(value4 - value3).toFixed(0)}`}
+			aria-label={label}
+			viewBox={`0 ${top.toFixed(0)} ${width.toFixed(0)} ${(bottom - top).toFixed(0)}`}
 			preserveAspectRatio="xMinYMid meet"
 			className="block h-11.5 w-full fill-hand"
 		>
-			{value.map(
-				({ cp: argument3, strokes: argument4, transform: argument5 }) => (
-					<g transform={argument5} key={argument3}>
-						{argument4.map((argument6) => (
-							<path d={strokePath(argument6)} key={argument6.id} />
-						))}
-					</g>
-				),
-			)}
+			{letters.map(({ cp: codepoint, strokes, transform }) => (
+				<g transform={transform} key={codepoint}>
+					{strokes.map((stroke) => (
+						<path d={strokePath(stroke)} key={stroke.id} />
+					))}
+				</g>
+			))}
 		</svg>
 	);
 }

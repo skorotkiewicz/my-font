@@ -9,54 +9,54 @@ import { Panel } from "./ui/Sheet.jsx";
 import { LiveText } from "./LiveText.jsx";
 import { GlyphGrid } from "./GlyphGrid.jsx";
 function GlyphTile({
-	cp: argument,
-	drawn: argument2,
-	current: argument3,
-	tabIndex: argument4,
-	onSelect: argument5,
-	className: argument6,
+	cp: codepoint,
+	drawn: isDrawn,
+	current: isCurrent,
+	tabIndex,
+	onSelect,
+	className,
 }) {
-	let value = argument3
+	let tileSurface = isCurrent
 		? `bg-paper [--color-hand:var(--color-carbon)] [--color-placeholder:var(--color-carbon)]`
-		: argument2
+		: isDrawn
 			? `bg-paper/14 hover:bg-paper/20`
 			: `inset-ring-[1.5px] inset-ring-paper/35 hover:bg-paper/8`;
 	return (
 		<button
 			type="button"
-			data-cp={argument}
-			tabIndex={argument4}
-			onClick={() => argument5(argument)}
-			aria-current={argument3 ? `true` : undefined}
-			aria-label={`${describeCharacter(argument)}${argument2 ? `, written` : ``}`}
-			className={`pressable flex aspect-square items-center justify-center leading-none ${value} ${argument6}`}
+			data-cp={codepoint}
+			tabIndex={tabIndex}
+			onClick={() => onSelect(codepoint)}
+			aria-current={isCurrent ? `true` : undefined}
+			aria-label={`${describeCharacter(codepoint)}${isDrawn ? `, written` : ``}`}
+			className={`pressable flex aspect-square items-center justify-center leading-none ${tileSurface} ${className}`}
 		>
-			<LiveText text={characterFor(argument)} shrink={0.72} />
+			<LiveText text={characterFor(codepoint)} shrink={0.72} />
 		</button>
 	);
 }
-function GlyphCount({ written: argument, total: argument2 }) {
+function GlyphCount({ written: writtenCount, total: totalCount }) {
 	return (
 		<span className="flex shrink-0 items-center gap-1.5 text-caption text-paper/90 tabular-nums">
-			{argument === argument2 ? (
+			{writtenCount === totalCount ? (
 				<CheckCircleIcon className="size-4.5 shrink-0 text-paper" />
 			) : null}
-			{argument}
+			{writtenCount}
 			{` of `}
-			{argument2}
+			{totalCount}
 		</span>
 	);
 }
 function GlyphsSheet() {
-	let { state: value, actions: value2 } = useWrite();
-	let value3 = (argument) => {
-		value2.go(argument, `jump`);
-		value2.closeSheet();
+	let { state, actions } = useWrite();
+	let selectGlyph = (selectedCodepoint) => {
+		actions.go(selectedCodepoint, `jump`);
+		actions.closeSheet();
 	};
 	return (
 		<Panel
-			open={value.sheet === `glyphs`}
-			onClose={value2.closeSheet}
+			open={state.sheet === `glyphs`}
+			onClose={actions.closeSheet}
 			title="All glyphs"
 			initialFocus={`[aria-current="true"]`}
 			anchor={`[data-anchor="picker"]`}
@@ -77,8 +77,8 @@ function GlyphsSheet() {
 							</h3>
 							<GlyphCount
 								written={
-									characterSet.codepoints.filter((argument) =>
-										value.drawn.has(argument),
+									characterSet.codepoints.filter((glyphCodepoint) =>
+										state.drawn.has(glyphCodepoint),
 									).length
 								}
 								total={characterSet.codepoints.length}
@@ -86,7 +86,7 @@ function GlyphsSheet() {
 						</div>
 						<GlyphGrid
 							set={characterSet}
-							onSelect={value3}
+							onSelect={selectGlyph}
 							Tile={GlyphTile}
 							className="grid grid-cols-[repeat(auto-fill,minmax(3.125rem,1fr))] gap-2.5 lg:gap-2"
 							tileClassName="rounded-xl text-[2.5rem]"

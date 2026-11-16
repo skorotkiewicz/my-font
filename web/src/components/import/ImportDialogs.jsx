@@ -16,12 +16,12 @@ import { ProjectSample } from "../ProjectSample.jsx";
 import { letterCount, relativeDate } from "../../lib/format.jsx";
 import { capitalize } from "../AlignmentPreview.jsx";
 function FileDropOverlay() {
-	let { actions: value } = useWrite();
-	let value2 = useFileDrop(value.openFont);
+	let { actions } = useWrite();
+	let isDraggingFile = useFileDrop(actions.openFont);
 	return (
 		<div
-			aria-hidden={!value2}
-			className={`pointer-events-none fixed inset-0 z-50 flex bg-carbon/80 p-4 backdrop-blur-[6px] transition-[opacity,visibility] duration-150 ease-out ${value2 ? `visible opacity-100` : `invisible opacity-0`}`}
+			aria-hidden={!isDraggingFile}
+			className={`pointer-events-none fixed inset-0 z-50 flex bg-carbon/80 p-4 backdrop-blur-[6px] transition-[opacity,visibility] duration-150 ease-out ${isDraggingFile ? `visible opacity-100` : `invisible opacity-0`}`}
 		>
 			<div className="flex flex-1 flex-col items-center justify-center gap-4.5 rounded-[1.75rem] border-2 border-dashed border-paper/70 bg-paper/6 px-6 text-center">
 				<span className="flex size-16 items-center justify-center rounded-full bg-paper text-carbon">
@@ -41,52 +41,53 @@ function FileDropOverlay() {
 		</div>
 	);
 }
-function ImportFileRow({ name: argument, about: argument2, tile: argument3 }) {
+function ImportFileRow({ name: fileName, about, tile: tileClass }) {
 	return (
 		<div className="flex items-center gap-3 px-4 py-3">
 			<span
-				className={`flex size-10 shrink-0 items-center justify-center rounded-[0.625rem] ${argument3}`}
+				className={`flex size-10 shrink-0 items-center justify-center rounded-[0.625rem] ${tileClass}`}
 			>
 				<FileIcon className="size-5.5" />
 			</span>
 			<span className="flex min-w-0 flex-1 flex-col gap-px">
 				<span className="cursor-text text-[0.9375rem] leading-5 font-medium wrap-anywhere select-text">
-					{argument}
+					{fileName}
 				</span>
-				<span className="text-caption text-paper/90">{argument2}</span>
+				<span className="text-caption text-paper/90">{about}</span>
 			</span>
 		</div>
 	);
 }
 function ImportErrorDialog() {
-	let { state: value, actions: value2 } = useWrite();
-	let value3 = value.opening?.kind === `refused` ? value.opening : undefined;
-	let value4 = importErrors[value3?.reason ?? `not-ductus`];
-	let value5 = fontFileName(value.project.name, `otf`);
-	let value6 = {
-		name: value3?.fileName ?? ``,
-		size: value3?.size ?? 0,
-		expected: value5,
+	let { state, actions } = useWrite();
+	let refusedImport =
+		state.opening?.kind === `refused` ? state.opening : undefined;
+	let errorContent = importErrors[refusedImport?.reason ?? `not-ductus`];
+	let expectedFileName = fontFileName(state.project.name, `otf`);
+	let errorContext = {
+		name: refusedImport?.fileName ?? ``,
+		size: refusedImport?.size ?? 0,
+		expected: expectedFileName,
 	};
 	return (
 		<Alert
-			open={value.sheet === `refused`}
-			onClose={value2.closeSheet}
-			title={value4.title}
-			message={value4.message(value6)}
+			open={state.sheet === `refused`}
+			onClose={actions.closeSheet}
+			title={errorContent.title}
+			message={errorContent.message(errorContext)}
 		>
 			<div className="px-5 pt-4.5 lg:px-7">
 				<div className="flex flex-col rounded-2xl bg-paper/8">
 					<ImportFileRow
-						name={value6.name}
-						about={value4.about(value6)}
+						name={errorContext.name}
+						about={errorContent.about(errorContext)}
 						tile="bg-paper/14"
 					/>
-					{value4.showExpected && (
+					{errorContent.showExpected && (
 						<React.Fragment>
 							<div aria-hidden={true} className="ms-17 h-px bg-paper/14" />
 							<ImportFileRow
-								name={value5}
+								name={expectedFileName}
 								about="What yours is called, from Export"
 								tile="bg-paper text-carbon"
 							/>
@@ -95,14 +96,14 @@ function ImportErrorDialog() {
 				</div>
 			</div>
 			<SheetActions>
-				{value3?.reason === `newer` ? (
+				{refusedImport?.reason === `newer` ? (
 					<SheetPrimaryButton onClick={() => location.reload()}>
-						{value4.action}
+						{errorContent.action}
 					</SheetPrimaryButton>
 				) : (
-					<SheetPrimaryButton onClick={value2.chooseFont}>
+					<SheetPrimaryButton onClick={actions.chooseFont}>
 						<FolderIcon className="size-5.5 shrink-0 lg:size-5" />
-						{value4.action}
+						{errorContent.action}
 					</SheetPrimaryButton>
 				)}
 				<SheetCloseButton>{`Close`}</SheetCloseButton>
@@ -114,50 +115,50 @@ function ImportErrorDialog() {
 		</Alert>
 	);
 }
-function ImportProjectCard({
-	name: argument,
-	badge: argument2,
-	project: argument3,
-	when: argument4,
-}) {
+function ImportProjectCard({ name, badge, project, when }) {
 	return (
 		<div className="flex flex-col gap-2 rounded-2xl bg-paper/8 px-4 pt-3.5 pb-3">
 			<div className="flex items-center justify-between gap-3">
 				<div className="flex min-w-0 items-center gap-2">
 					<span className="min-w-0 text-[0.9375rem] leading-5 font-medium wrap-anywhere">
-						{argument}
+						{name}
 					</span>
-					{argument2}
+					{badge}
 				</div>
 				<span className="shrink-0 text-caption text-paper/90 tabular-nums">
-					{letterCount(writtenDrawings(argument3).length)}
+					{letterCount(writtenDrawings(project).length)}
 				</span>
 			</div>
 			<ProjectSample
-				project={argument3}
-				label={`Handwriting sample from ${argument}`}
+				project={project}
+				label={`Handwriting sample from ${name}`}
 			/>
-			<span className="text-caption text-paper/90">{argument4}</span>
+			<span className="text-caption text-paper/90">{when}</span>
 		</div>
 	);
 }
 function ReplaceProjectDialog() {
-	let { state: value, actions: value2 } = useWrite();
-	let value3 = value.opening?.kind === `replace` ? value.opening : undefined;
-	let value4 = letterCount(value3 ? writtenDrawings(value3.device).length : 0);
-	let value5 = value3 ? value3.device.updatedAt > value3.exportedAt : false;
+	let { state, actions } = useWrite();
+	let pendingReplacement =
+		state.opening?.kind === `replace` ? state.opening : undefined;
+	let writtenCount = letterCount(
+		pendingReplacement ? writtenDrawings(pendingReplacement.device).length : 0,
+	);
+	let isDeviceNewer = pendingReplacement
+		? pendingReplacement.device.updatedAt > pendingReplacement.exportedAt
+		: false;
 	return (
 		<Alert
-			open={value.sheet === `replace`}
-			onClose={value2.closeSheet}
-			title={`Replace your ${value4}?`}
+			open={state.sheet === `replace`}
+			onClose={actions.closeSheet}
+			title={`Replace your ${writtenCount}?`}
 			message={
 				<React.Fragment>
 					{`This replaces what’s on this device and can’t be undone.`}
 					{` `}
 					<button
 						type="button"
-						onClick={() => value2.openSheet(`export`)}
+						onClick={() => actions.openSheet(`export`)}
 						className="rounded-sm font-semibold text-paper underline underline-offset-2 hover:decoration-2"
 					>{`Export yours first`}</button>
 					{` `}
@@ -165,29 +166,29 @@ function ReplaceProjectDialog() {
 				</React.Fragment>
 			}
 		>
-			{value3 && (
+			{pendingReplacement && (
 				<div className="flex flex-col gap-2 px-5 pt-4.5 lg:px-7">
 					<ImportProjectCard
-						name={value3.fileName}
-						project={value3.project}
-						when={`Made ${relativeDate(value3.exportedAt)}`}
+						name={pendingReplacement.fileName}
+						project={pendingReplacement.project}
+						when={`Made ${relativeDate(pendingReplacement.exportedAt)}`}
 					/>
 					<ImportProjectCard
 						name="On this device"
-						project={value3.device}
+						project={pendingReplacement.device}
 						badge={
-							value5 && (
+							isDeviceNewer && (
 								<span className="shrink-0 rounded-md bg-canary px-1.75 py-0.5 text-tag font-semibold text-ink">{`Newer`}</span>
 							)
 						}
-						when={`${capitalize(`edited ${relativeDate(value3.device.updatedAt)}`)}${value5 ? `, after the file was made` : ``}`}
+						when={`${capitalize(`edited ${relativeDate(pendingReplacement.device.updatedAt)}`)}${isDeviceNewer ? `, after the file was made` : ``}`}
 					/>
 				</div>
 			)}
 			<SheetActions>
-				<SheetDangerButton onClick={value2.replace}>
+				<SheetDangerButton onClick={actions.replace}>
 					{`Replace `}
-					{value4}
+					{writtenCount}
 				</SheetDangerButton>
 				<SheetCloseButton>{`Keep my letters`}</SheetCloseButton>
 			</SheetActions>

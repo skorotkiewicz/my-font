@@ -1,6 +1,6 @@
 import { freehandStroke } from "./freehand.jsx";
 var penSize = 40;
-var pressureEasing = (argument) => Math.sin((argument * Math.PI) / 2);
+var pressureEasing = (pressure) => Math.sin((pressure * Math.PI) / 2);
 var strokeCaps = {
 	start: {
 		cap: true,
@@ -26,217 +26,281 @@ var penStrokeOptions = {
 	thinning: 0.4,
 	smoothing: 0.62,
 	streamline: 0.62,
-	easing: (argument) => argument * 0.65 + pressureEasing(argument) * 0.35,
+	easing: (pressure) => pressure * 0.65 + pressureEasing(pressure) * 0.35,
 	simulatePressure: false,
 };
 var pressureMultiplier = 1.25;
-var optionsForInput = (argument) =>
-	argument === `pen` ? penStrokeOptions : mouseStrokeOptions;
+var optionsForInput = (inputType) =>
+	inputType === `pen` ? penStrokeOptions : mouseStrokeOptions;
 var pressureThresholds = {
 	real: 0.68,
 	simulated: 0.76,
 };
-var thresholdForInput = (argument) =>
-	argument === `pen` ? pressureThresholds.real : pressureThresholds.simulated;
+var thresholdForInput = (inputType) =>
+	inputType === `pen` ? pressureThresholds.real : pressureThresholds.simulated;
 var cornerThreshold = 0.275;
 var maxSegmentLength = 250;
 var samplingStep = 0.2;
-var pointDistance = (argument, argument2) =>
-	Math.hypot(argument[0] - argument2[0], argument[1] - argument2[1]);
-function cornerCosine(argument, argument2, argument3) {
-	let [value, value2, value3, value4] = [
-		argument2[0] - argument[0],
-		argument2[1] - argument[1],
-		argument3[0] - argument2[0],
-		argument3[1] - argument2[1],
+var pointDistance = (startPoint, endPoint) =>
+	Math.hypot(startPoint[0] - endPoint[0], startPoint[1] - endPoint[1]);
+function cornerCosine(previousPoint, cornerPoint, nextPoint) {
+	let [incomingX, incomingY, outgoingX, outgoingY] = [
+		cornerPoint[0] - previousPoint[0],
+		cornerPoint[1] - previousPoint[1],
+		nextPoint[0] - cornerPoint[0],
+		nextPoint[1] - cornerPoint[1],
 	];
-	let value5 = Math.hypot(value, value2) * Math.hypot(value3, value4);
-	if (value5) {
-		return (value * value3 + value2 * value4) / value5;
+	let lengthProduct =
+		Math.hypot(incomingX, incomingY) * Math.hypot(outgoingX, outgoingY);
+	if (lengthProduct) {
+		return (incomingX * outgoingX + incomingY * outgoingY) / lengthProduct;
 	} else {
 		return 1;
 	}
 }
-function trimStrokeEnds(argument, argument2) {
-	let value = argument2 / 3;
-	let value2 = argument.length;
-	let value3 = 1;
-	let value4 = argument[0][2];
+function trimStrokeEnds(points, size) {
+	let trimDistance = size / 3;
+	let pointCount = points.length;
+	let firstKeptIndex = 1;
+	let startPressure = points[0][2];
 	while (
-		value3 < value2 - 1 &&
-		pointDistance(argument[value3], argument[0]) <= value
+		firstKeptIndex < pointCount - 1 &&
+		pointDistance(points[firstKeptIndex], points[0]) <= trimDistance
 	) {
-		value4 = Math.max(value4, argument[value3++][2]);
+		startPressure = Math.max(startPressure, points[firstKeptIndex++][2]);
 	}
-	let value5 = value2 - 2;
+	let lastKeptIndex = pointCount - 2;
 	while (
-		value5 >= value3 &&
-		pointDistance(argument[value5], argument[value2 - 1]) <= value
+		lastKeptIndex >= firstKeptIndex &&
+		pointDistance(points[lastKeptIndex], points[pointCount - 1]) <= trimDistance
 	) {
-		value5--;
+		lastKeptIndex--;
 	}
-	let value6 = [
-		[argument[0][0], argument[0][1], value4],
-		...argument.slice(value3, value5 + 1),
+	let trimmedPoints = [
+		[points[0][0], points[0][1], startPressure],
+		...points.slice(firstKeptIndex, lastKeptIndex + 1),
 	];
-	if (value2 > 1) {
-		value6.push(argument[value2 - 1]);
+	if (pointCount > 1) {
+		trimmedPoints.push(points[pointCount - 1]);
 	}
 	return {
-		pts: value6,
-		trimmedEnd: value5 < value2 - 2,
+		pts: trimmedPoints,
+		trimmedEnd: lastKeptIndex < pointCount - 2,
 	};
 }
-function strokeTaper(argument, argument2, argument3) {
-	let value = argument2.size;
-	let value2 = argument.length;
-	let value3 = (argument4) =>
-		argument2.simulatePressure
+function strokeTaper(points, options, targetPressure) {
+	let size = options.size;
+	let pointCount = points.length;
+	let pressureAt = (pressureIndex) =>
+		options.simulatePressure
 			? 0.5
-			: Math.min(1, argument[argument4][2] * pressureMultiplier);
-	let value4 = 0;
-	for (let value11 = 1; value11 < value2; value11++) {
-		value4 += pointDistance(argument[value11 - 1], argument[value11]);
-	}
-	if (value4 < value) {
-		return argument.map(() => argument3);
-	}
-	let value5 = (argument4, argument5) => {
-		let value11 = Math.min(
-			1,
-			pointDistance(argument[argument5 - 1], argument[argument5]) / value,
+			: Math.min(1, points[pressureIndex][2] * pressureMultiplier);
+	let totalDistance = 0;
+	for (let lengthIndex = 1; lengthIndex < pointCount; lengthIndex++) {
+		totalDistance += pointDistance(
+			points[lengthIndex - 1],
+			points[lengthIndex],
 		);
-		let value12 = argument2.simulatePressure ? 1 - value11 : value3(argument5);
+	}
+	if (totalDistance < size) {
+		return points.map(() => targetPressure);
+	}
+	let advancePressure = (previousPressure, nextIndex) => {
+		let distanceFraction = Math.min(
+			1,
+			pointDistance(points[nextIndex - 1], points[nextIndex]) / size,
+		);
+		let targetNextPressure = options.simulatePressure
+			? 1 - distanceFraction
+			: pressureAt(nextIndex);
 		return Math.min(
 			1,
-			argument4 + (value12 - argument4) * value11 * cornerThreshold,
+			previousPressure +
+				(targetNextPressure - previousPressure) *
+					distanceFraction *
+					cornerThreshold,
 		);
 	};
-	let value6 = value3(0);
+	let smoothedPressure = pressureAt(0);
 	for (
-		let value11 = 1, value12 = 0;
-		value11 < value2 && value12 < value * 5;
-		value11++
+		let warmupIndex = 1, warmupDistance = 0;
+		warmupIndex < pointCount && warmupDistance < size * 5;
+		warmupIndex++
 	) {
-		value12 += pointDistance(argument[value11 - 1], argument[value11]);
-		value6 = (value6 + value5(value6, value11)) / 2;
+		warmupDistance += pointDistance(
+			points[warmupIndex - 1],
+			points[warmupIndex],
+		);
+		smoothedPressure =
+			(smoothedPressure + advancePressure(smoothedPressure, warmupIndex)) / 2;
 	}
-	let value7 = [value6];
-	for (let value11 = 1; value11 < value2; value11++) {
-		value7.push((value6 = value5(value6, value11)));
+	let pressures = [smoothedPressure];
+	for (let pressureIndex = 1; pressureIndex < pointCount; pressureIndex++) {
+		pressures.push(
+			(smoothedPressure = advancePressure(smoothedPressure, pressureIndex)),
+		);
 	}
-	let [value8, value9] = [0, 0];
-	for (let value11 = 1; value11 < value2 && value9 < value * 5; value11++) {
-		let value12 = pointDistance(argument[value11 - 1], argument[value11]);
-		value8 += value7[value11] * value12;
-		value9 += value12;
+	let [weightedPressureSum, sampleDistance] = [0, 0];
+	for (
+		let averageIndex = 1;
+		averageIndex < pointCount && sampleDistance < size * 5;
+		averageIndex++
+	) {
+		let segmentDistance = pointDistance(
+			points[averageIndex - 1],
+			points[averageIndex],
+		);
+		weightedPressureSum += pressures[averageIndex] * segmentDistance;
+		sampleDistance += segmentDistance;
 	}
-	let value10 = value8 / value9;
-	return value7.map((argument4, argument5) => {
-		if (argument5) {
-			value10 +=
-				(argument4 - value10) *
+	let baselinePressure = weightedPressureSum / sampleDistance;
+	return pressures.map((pointPressure, pointIndex) => {
+		if (pointIndex) {
+			baselinePressure +=
+				(pointPressure - baselinePressure) *
 				(1 -
 					Math.exp(
-						-pointDistance(argument[argument5 - 1], argument[argument5]) /
+						-pointDistance(points[pointIndex - 1], points[pointIndex]) /
 							maxSegmentLength,
 					));
 		}
-		return Math.min(1, Math.max(0, argument3 + argument4 - value10));
+		return Math.min(
+			1,
+			Math.max(0, targetPressure + pointPressure - baselinePressure),
+		);
 	});
 }
-function resamplePoints(argument, argument2) {
-	let value = argument.length;
-	let value2 = [0];
-	for (let value6 = 1; value6 < value; value6++) {
-		value2.push(
-			value2[value6 - 1] +
-				pointDistance(argument[value6 - 1], argument[value6]),
+function resamplePoints(points, cornerDistance) {
+	let pointCount = points.length;
+	let cumulativeDistances = [0];
+	for (let distanceIndex = 1; distanceIndex < pointCount; distanceIndex++) {
+		cumulativeDistances.push(
+			cumulativeDistances[distanceIndex - 1] +
+				pointDistance(points[distanceIndex - 1], points[distanceIndex]),
 		);
 	}
-	let value3 = [];
-	let value4 = -1;
-	let value5 = samplingStep;
-	for (let value6 = 1, value7 = 0, value8 = 1; value6 < value - 1; value6++) {
+	let cornerIndices = [];
+	let candidateIndex = -1;
+	let candidateCosine = samplingStep;
+	for (
+		let pointIndex = 1, previousIndex = 0, nextIndex = 1;
+		pointIndex < pointCount - 1;
+		pointIndex++
+	) {
 		while (
-			value7 + 1 < value6 &&
-			value2[value6] - value2[value7 + 1] >= argument2
+			previousIndex + 1 < pointIndex &&
+			cumulativeDistances[pointIndex] -
+				cumulativeDistances[previousIndex + 1] >=
+				cornerDistance
 		) {
-			value7++;
+			previousIndex++;
 		}
-		while (value8 < value - 1 && value2[value8] - value2[value6] < argument2) {
-			value8++;
+		while (
+			nextIndex < pointCount - 1 &&
+			cumulativeDistances[nextIndex] - cumulativeDistances[pointIndex] <
+				cornerDistance
+		) {
+			nextIndex++;
 		}
-		if (value2[value6] - value2[value7] < argument2) {
+		if (
+			cumulativeDistances[pointIndex] - cumulativeDistances[previousIndex] <
+			cornerDistance
+		) {
 			continue;
 		}
-		if (value2[value8] - value2[value6] < argument2) {
+		if (
+			cumulativeDistances[nextIndex] - cumulativeDistances[pointIndex] <
+			cornerDistance
+		) {
 			break;
 		}
-		let value9 = cornerCosine(
-			argument[value7],
-			argument[value6],
-			argument[value8],
+		let turnCosine = cornerCosine(
+			points[previousIndex],
+			points[pointIndex],
+			points[nextIndex],
 		);
-		if (value9 < value5) {
-			[value4, value5] = [value6, value9];
+		if (turnCosine < candidateCosine) {
+			[candidateIndex, candidateCosine] = [pointIndex, turnCosine];
 		}
-		if (value4 >= 0 && value2[value6] - value2[value4] >= argument2) {
-			value3.push(value4);
-			[value4, value5] = [-1, samplingStep];
+		if (
+			candidateIndex >= 0 &&
+			cumulativeDistances[pointIndex] - cumulativeDistances[candidateIndex] >=
+				cornerDistance
+		) {
+			cornerIndices.push(candidateIndex);
+			[candidateIndex, candidateCosine] = [-1, samplingStep];
 		}
 	}
-	if (value4 >= 0) {
-		value3.push(value4);
+	if (candidateIndex >= 0) {
+		cornerIndices.push(candidateIndex);
 	}
-	return value3;
+	return cornerIndices;
 }
-function strokePolygons(argument, argument2, argument3 = true) {
-	if (!argument.length) {
+function strokePolygons(points, inputType, isComplete = true) {
+	if (!points.length) {
 		return [];
 	}
-	let value = optionsForInput(argument2);
-	let value2 = value.size;
-	let { pts: value3, trimmedEnd: value4 } = trimStrokeEnds(argument, value2);
-	let value5 = strokeTaper(value3, value, thresholdForInput(argument2));
-	let value6 = value3.length;
-	let value7 =
-		argument3 ||
-		!value.simulatePressure ||
-		value4 ||
-		value6 < 2 ||
-		pointDistance(value3[value6 - 2], value3[value6 - 1]) < value2;
-	let value8 = [0, ...resamplePoints(value3, value2 / 2), value6 - 1];
-	let value9 = [];
-	for (let value10 = 1; value10 < value8.length; value10++) {
-		let value11 = [];
+	let options = optionsForInput(inputType);
+	let size = options.size;
+	let { pts: trimmedPoints, trimmedEnd } = trimStrokeEnds(points, size);
+	let pressures = strokeTaper(
+		trimmedPoints,
+		options,
+		thresholdForInput(inputType),
+	);
+	let pointCount = trimmedPoints.length;
+	let completeLastSegment =
+		isComplete ||
+		!options.simulatePressure ||
+		trimmedEnd ||
+		pointCount < 2 ||
+		pointDistance(
+			trimmedPoints[pointCount - 2],
+			trimmedPoints[pointCount - 1],
+		) < size;
+	let segmentBoundaries = [
+		0,
+		...resamplePoints(trimmedPoints, size / 2),
+		pointCount - 1,
+	];
+	let polygons = [];
+	for (
+		let segmentIndex = 1;
+		segmentIndex < segmentBoundaries.length;
+		segmentIndex++
+	) {
+		let segmentPoints = [];
 		for (
-			let value13 = value8[value10 - 1];
-			value13 <= value8[value10];
-			value13++
+			let pointIndex = segmentBoundaries[segmentIndex - 1];
+			pointIndex <= segmentBoundaries[segmentIndex];
+			pointIndex++
 		) {
-			value11.push([value3[value13][0], value3[value13][1], value5[value13]]);
+			segmentPoints.push([
+				trimmedPoints[pointIndex][0],
+				trimmedPoints[pointIndex][1],
+				pressures[pointIndex],
+			]);
 		}
-		let value12 = freehandStroke(value11, {
-			...value,
+		let outline = freehandStroke(segmentPoints, {
+			...options,
 			simulatePressure: false,
-			last: value10 < value8.length - 1 || value7,
+			last: segmentIndex < segmentBoundaries.length - 1 || completeLastSegment,
 		});
-		if (value12.length >= 3) {
-			value9.push(value12);
+		if (outline.length >= 3) {
+			polygons.push(outline);
 		}
 	}
-	return value9;
+	return polygons;
 }
 var polygonCache = new WeakMap();
 function polygonsForStroke(stroke) {
-	let value = polygonCache.get(stroke);
-	if (!value) {
+	let polygons = polygonCache.get(stroke);
+	if (!polygons) {
 		polygonCache.set(
 			stroke,
-			(value = strokePolygons(stroke.pts, stroke.input)),
+			(polygons = strokePolygons(stroke.pts, stroke.input)),
 		);
 	}
-	return value;
+	return polygons;
 }
 export { strokePolygons, polygonsForStroke };

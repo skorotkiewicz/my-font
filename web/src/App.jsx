@@ -14,13 +14,13 @@ import { FontPreview } from "./components/FontPreview.jsx";
 import { WritingStrip } from "./components/WritingStrip.jsx";
 import { GlyphTools } from "./components/GlyphTools.jsx";
 function GlyphAnnouncement() {
-	let { state: value } = useWrite();
-	let value2 = value.set.codepoints.indexOf(value.cp) + 1;
+	let { state } = useWrite();
+	let glyphOrdinal = state.set.codepoints.indexOf(state.cp) + 1;
 	return (
 		<p
 			className="sr-only"
 			aria-live="polite"
-		>{`Write ${describeCharacter(value.cp)}, ${value2} of ${value.set.codepoints.length} ${value.set.label.toLowerCase()}`}</p>
+		>{`Write ${describeCharacter(state.cp)}, ${glyphOrdinal} of ${state.set.codepoints.length} ${state.set.label.toLowerCase()}`}</p>
 	);
 }
 function WriteApp() {

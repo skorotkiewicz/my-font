@@ -36,59 +36,61 @@ var punctuationSpecimens = {
 	"`": ["`code`"],
 	"~": [`~5 min`],
 };
-var isLowercase = (argument) => argument >= `a` && argument <= `z`;
-var isUppercase = (argument) => argument >= `A` && argument <= `Z`;
-var isDigit = (argument) => argument >= `0` && argument <= `9`;
-function wordsForCharacter(argument, argument2, argument3) {
-	let value = argument.toLowerCase();
-	let value2 = (argument4) => {
-		let value4 = [...argument4].filter((argument5) => argument5 !== value);
-		if (value4.length) {
-			return value4.filter(argument2).length / value4.length;
+var isLowercase = (character) => character >= `a` && character <= `z`;
+var isUppercase = (character) => character >= `A` && character <= `Z`;
+var isDigit = (character) => character >= `0` && character <= `9`;
+function wordsForCharacter(character, isDrawn, limit) {
+	let lowercaseCharacter = character.toLowerCase();
+	let coverageFor = (word) => {
+		let otherCharacters = [...word].filter(
+			(candidateCharacter) => candidateCharacter !== lowercaseCharacter,
+		);
+		if (otherCharacters.length) {
+			return otherCharacters.filter(isDrawn).length / otherCharacters.length;
 		} else {
 			return 1;
 		}
 	};
-	let value3 = specimenWords
-		.filter((argument4) => argument4.includes(value))
-		.map((argument4, argument5) => ({
-			w: argument4,
-			i: argument5,
-			score: value2(argument4),
+	let rankedWords = specimenWords
+		.filter((word) => word.includes(lowercaseCharacter))
+		.map((word, wordIndex) => ({
+			w: word,
+			i: wordIndex,
+			score: coverageFor(word),
 		}))
 		.sort(
-			(argument4, argument5) =>
-				argument5.score - argument4.score || argument4.i - argument5.i,
+			(leftWord, rightWord) =>
+				rightWord.score - leftWord.score || leftWord.i - rightWord.i,
 		)
-		.slice(0, argument3)
-		.map(({ w: argument4 }) => argument4);
-	if (isUppercase(argument)) {
-		return value3.map((argument4) => argument4.toUpperCase());
+		.slice(0, limit)
+		.map(({ w: word }) => word);
+	if (isUppercase(character)) {
+		return rankedWords.map((word) => word.toUpperCase());
 	} else {
-		return value3;
+		return rankedWords;
 	}
 }
-function specimenForCharacter(argument, argument2 = () => false) {
-	if (isLowercase(argument)) {
+function specimenForCharacter(character, isDrawn = () => false) {
+	if (isLowercase(character)) {
 		return [
-			`n${argument}n o${argument}o`,
-			...wordsForCharacter(argument, argument2, 3),
+			`n${character}n o${character}o`,
+			...wordsForCharacter(character, isDrawn, 3),
 		];
-	} else if (isUppercase(argument)) {
+	} else if (isUppercase(character)) {
 		return [
-			`H${argument}H O${argument}O`,
-			...wordsForCharacter(argument, argument2, 2),
+			`H${character}H O${character}O`,
+			...wordsForCharacter(character, isDrawn, 2),
 		];
-	} else if (isDigit(argument)) {
+	} else if (isDigit(character)) {
 		return [
-			`1${argument}1 0${argument}0`,
-			`${argument}0${argument}${argument}`,
+			`1${character}1 0${character}0`,
+			`${character}0${character}${character}`,
 			`0123456789`,
 		];
 	} else {
 		return [
-			`n${argument}n H${argument}H`,
-			...(punctuationSpecimens[argument] ?? []),
+			`n${character}n H${character}H`,
+			...(punctuationSpecimens[character] ?? []),
 		];
 	}
 }

@@ -5,28 +5,30 @@ function useProject(initialProject, onLoad) {
 	let [project, setProject] = React.useState(initialProject);
 	let [status, setStatus] = React.useState(`loading`);
 	let loading = status === `loading`;
-	let notifyLoaded = React.useEffectEvent((argument) => onLoad?.(argument));
+	let notifyLoaded = React.useEffectEvent((loadedProject) =>
+		onLoad?.(loadedProject),
+	);
 	React.useEffect(() => {
-		let value = true;
+		let active = true;
 		loadProject().then(
-			(argument) => {
-				if (value) {
-					setProject(ensureProjectId(argument ?? initialProject));
-					if (argument) {
-						notifyLoaded(argument);
+			(storedProject) => {
+				if (active) {
+					setProject(ensureProjectId(storedProject ?? initialProject));
+					if (storedProject) {
+						notifyLoaded(storedProject);
 					}
 					setStatus(`saved`);
 				}
 			},
 			() => {
-				if (value) {
+				if (active) {
 					setProject(ensureProjectId(initialProject));
 					setStatus(`unsaved`);
 				}
 			},
 		);
 		return () => {
-			value = false;
+			active = false;
 		};
 	}, [initialProject]);
 	let flushProject = React.useEffectEvent(() => {
@@ -41,17 +43,18 @@ function useProject(initialProject, onLoad) {
 		if (loading) {
 			return;
 		}
-		let value = setTimeout(flushProject, saveDelay);
-		return () => clearTimeout(value);
+		let saveTimer = setTimeout(flushProject, saveDelay);
+		return () => clearTimeout(saveTimer);
 	}, [project, loading]);
 	React.useEffect(() => {
-		let value = () => {
+		let handleVisibilityChange = () => {
 			if (document.visibilityState === `hidden`) {
 				flushProject();
 			}
 		};
-		document.addEventListener(`visibilitychange`, value);
-		return () => document.removeEventListener(`visibilitychange`, value);
+		document.addEventListener(`visibilitychange`, handleVisibilityChange);
+		return () =>
+			document.removeEventListener(`visibilitychange`, handleVisibilityChange);
 	}, []);
 	return {
 		project,

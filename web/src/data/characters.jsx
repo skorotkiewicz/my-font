@@ -1,13 +1,13 @@
-var codepointRange = (argument, argument2) =>
+var codepointRange = (firstCharacter, lastCharacter) =>
 	Array.from(
 		{
-			length: argument2.charCodeAt(0) - argument.charCodeAt(0) + 1,
+			length: lastCharacter.charCodeAt(0) - firstCharacter.charCodeAt(0) + 1,
 		},
-		(argument3, argument4) => argument.charCodeAt(0) + argument4,
+		(unusedElement, offset) => firstCharacter.charCodeAt(0) + offset,
 	);
 var punctuationCodepoints = `.,!?'"-:;()&@#$%*/+=_<>[]{}\\|^\`~`
 	.split(``)
-	.map((argument) => argument.charCodeAt(0));
+	.map((character) => character.charCodeAt(0));
 var characterSets = [
 	{
 		id: `lowercase`,
@@ -38,11 +38,11 @@ var allCodepoints = characterSets.flatMap(
 	(characterSet) => characterSet.codepoints,
 );
 characterSets
-	.filter((argument) => argument.required)
+	.filter((characterSet) => characterSet.required)
 	.flatMap((characterSet) => characterSet.codepoints);
-var characterSetFor = (argument) =>
+var characterSetFor = (codepoint) =>
 	characterSets.find((characterSet) =>
-		characterSet.codepoints.includes(argument),
+		characterSet.codepoints.includes(codepoint),
 	);
 var punctuationLabels = {
 	".": `a full stop`,
@@ -78,17 +78,17 @@ var punctuationLabels = {
 	"`": `a backtick`,
 	"~": `a tilde`,
 };
-var characterFor = (argument) => String.fromCharCode(argument);
-function describeCharacter(argument) {
-	let value = characterFor(argument);
-	if (value >= `a` && value <= `z`) {
-		return `a small ${value}`;
-	} else if (value >= `A` && value <= `Z`) {
-		return `a capital ${value}`;
-	} else if (value >= `0` && value <= `9`) {
-		return `the number ${value}`;
+var characterFor = (codepoint) => String.fromCharCode(codepoint);
+function describeCharacter(codepoint) {
+	let character = characterFor(codepoint);
+	if (character >= `a` && character <= `z`) {
+		return `a small ${character}`;
+	} else if (character >= `A` && character <= `Z`) {
+		return `a capital ${character}`;
+	} else if (character >= `0` && character <= `9`) {
+		return `the number ${character}`;
 	} else {
-		return punctuationLabels[value] ?? value;
+		return punctuationLabels[character] ?? character;
 	}
 }
 export {

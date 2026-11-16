@@ -16,74 +16,74 @@ function getFontWorker() {
 				type: `module`,
 			},
 		)),
-		(fontWorker.onmessage = ({ data: argument }) => {
-			let value = fontRequests.get(argument.id);
-			fontRequests.delete(argument.id);
-			if (value) {
-				if (argument.ok) {
-					value.resolve({
-						buffer: argument.buffer,
-						ms: argument.ms,
+		(fontWorker.onmessage = ({ data: response }) => {
+			let pendingRequest = fontRequests.get(response.id);
+			fontRequests.delete(response.id);
+			if (pendingRequest) {
+				if (response.ok) {
+					pendingRequest.resolve({
+						buffer: response.buffer,
+						ms: response.ms,
 					});
 				} else {
-					value.reject(Error(argument.error));
+					pendingRequest.reject(Error(response.error));
 				}
 			}
 		}),
 		fontWorker)
 	);
 }
-function requestFont(argument, argument2 = []) {
-	let value = fontRequestId++;
-	return new Promise((argument3, argument4) => {
-		fontRequests.set(value, {
-			resolve: argument3,
-			reject: argument4,
+function requestFont(request, transferables = []) {
+	let requestId = fontRequestId++;
+	return new Promise((resolve, reject) => {
+		fontRequests.set(requestId, {
+			resolve: resolve,
+			reject: reject,
 		});
 		getFontWorker().postMessage(
 			{
-				...argument,
-				id: value,
+				...request,
+				id: requestId,
 			},
-			argument2,
+			transferables,
 		);
 	});
 }
-var buildProjectFont = (argument, { place: argument2, lines: argument3 }) =>
+var buildProjectFont = (project, { place: placements, lines: guideLines }) =>
 	requestFont({
 		type: `build`,
-		familyName: familyName(argument.name),
-		projectId: argument.id,
-		tracking: argument.settings.tracking,
+		familyName: familyName(project.name),
+		projectId: project.id,
+		tracking: project.settings.tracking,
 		metrics: {
-			xHeight: argument3.xHeight,
-			capHeight: argument3.capHeight,
+			xHeight: guideLines.xHeight,
+			capHeight: guideLines.capHeight,
 		},
-		glyphs: writtenDrawings(argument).map((argument4) => ({
-			...argument4,
-			place: argument2.get(argument4.cp) ?? defaultPlacement,
+		glyphs: writtenDrawings(project).map((glyph) => ({
+			...glyph,
+			place: placements.get(glyph.cp) ?? defaultPlacement,
 		})),
 	});
-var convertWoff2 = (argument) => {
-	let value = argument.slice(0);
+var convertWoff2 = (otfBuffer) => {
+	let transferableOtf = otfBuffer.slice(0);
 	return requestFont(
 		{
 			type: `woff2`,
-			otf: value,
+			otf: transferableOtf,
 		},
-		[value],
+		[transferableOtf],
 	);
 };
-var packProjectFont = (argument, argument2) => {
-	let value = argument.slice(0);
+var packProjectFont = (otfBuffer, project) => {
+	let transferableOtf = otfBuffer.slice(0);
 	return requestFont(
 		{
 			type: `pack`,
-			otf: value,
-			project: argument2,
+			otf: transferableOtf,
+			project: project,
 			exportedAt: Date.now(),
 		},
-		[value],
+		[transferableOtf],
 	);
 };
 export { buildProjectFont, convertWoff2, packProjectFont };

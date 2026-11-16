@@ -19,27 +19,27 @@ var tallTailZone = {
 	bottom: descender,
 	name: `tall, with a tail`,
 };
-var glyphZone = (argument, argument2, argument3) => ({
-	top: argument,
-	bottom: argument2,
-	name: argument3,
+var glyphZone = (top, bottom, name) => ({
+	top: top,
+	bottom: bottom,
+	name: name,
 });
 var glyphZones = {
 	...Object.fromEntries(
-		[...`acemnorsuvwxz`].map((argument) => [argument, shortLetterZone]),
+		[...`acemnorsuvwxz`].map((character) => [character, shortLetterZone]),
 	),
 	...Object.fromEntries(
-		[...`bdfhiklt`].map((argument) => [argument, tallLetterZone]),
+		[...`bdfhiklt`].map((character) => [character, tallLetterZone]),
 	),
 	...Object.fromEntries(
-		[...`gpqy`].map((argument) => [argument, tailLetterZone]),
+		[...`gpqy`].map((character) => [character, tailLetterZone]),
 	),
 	j: tallTailZone,
 	...Object.fromEntries(
-		[...`!?&#$%@`].map((argument) => [argument, tallLetterZone]),
+		[...`!?&#$%@`].map((character) => [character, tallLetterZone]),
 	),
 	...Object.fromEntries(
-		[...`()[]{}|/\\`].map((argument) => [argument, tallTailZone]),
+		[...`()[]{}|/\\`].map((character) => [character, tallTailZone]),
 	),
 	".": glyphZone(120, 0, `dot on the line`),
 	",": glyphZone(120, -120, `mark on the line, dipping below`),
@@ -58,5 +58,5 @@ var glyphZones = {
 	">": glyphZone(450, 50, `mark in the middle`),
 	_: glyphZone(-60, -180, `line below the line`),
 };
-var zoneForCharacter = (argument) => glyphZones[argument] ?? tallLetterZone;
+var zoneForCharacter = (character) => glyphZones[character] ?? tallLetterZone;
 export { zoneForCharacter };

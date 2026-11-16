@@ -1,9 +1,10 @@
+import { recoverFonts } from "./recover-assets.mjs";
 import {
 	readFileSync,
 	writeFileSync,
 	mkdirSync,
-	readdirSync,
 	copyFileSync,
+	existsSync,
 } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
@@ -22,6 +23,17 @@ const root = path.resolve(import.meta.dirname, "..");
 const output = path.join(root, "web/src");
 const evidence = path.join(root, "webcrack-out");
 const variableMapPath = path.join(root, "variable-map.json");
+const checkOnly = process.argv.includes("--check");
+const explicitMapPath = path.join(root, "rename-map.json");
+const explicitNames = new Map(
+	(existsSync(explicitMapPath)
+		? (JSON.parse(readFileSync(explicitMapPath, "utf8")).bindings ?? [])
+		: []
+	).map((entry) => [
+		`${entry.source}:${entry.scope}:${entry.position}`,
+		entry.renamed,
+	]),
+);
 const sourceNames = [
 	"BcpSTgJi",
 	"B75EoOZt",
@@ -664,11 +676,16 @@ for (const [source, ast] of asts) {
 		Scope(scopePath) {
 			for (const binding of Object.values(scopePath.scope.bindings)) {
 				const original = binding.identifier.name;
+				const explicitName = explicitNames.get(
+					`${source}.js:${scopePath.node.start}:${binding.identifier.start}`,
+				);
 				const top = binding.scope.path.isProgram();
 				const parent = binding.path.parentPath;
-				let renamed = top
-					? names[source][original]
-					: localNames[source]?.[scopePath.node.id?.name]?.[original];
+				let renamed =
+					explicitName ??
+					(top
+						? names[source][original]
+						: localNames[source]?.[scopePath.node.id?.name]?.[original]);
 				if (binding.kind === "module") {
 					const imported = binding.path.node;
 					const target = path.basename(
@@ -725,8 +742,9 @@ for (const [source, ast] of asts) {
 					let candidate = renamed,
 						index = 2;
 					while (
-						binding.scope.hasBinding(candidate) ||
-						plannedNameTaken(binding.scope, candidate, binding)
+						!explicitName &&
+						(binding.scope.hasBinding(candidate) ||
+							plannedNameTaken(binding.scope, candidate, binding))
 					)
 						candidate = renamed + index++;
 					binding._recoveryName = candidate;
@@ -752,22 +770,29 @@ for (const [source, ast] of asts) {
 		},
 	});
 }
-writeFileSync(
-	variableMapPath,
-	JSON.stringify(
-		{
-			description:
-				"Scope-aware names inferred from recovered code. Framework runtime code is excluded from the app.",
-			bindings: variables.map(({ binding, ...entry }) => entry),
-		},
-		null,
-		2,
-	) + "\n",
+if (!checkOnly)
+	writeFileSync(
+		variableMapPath,
+		JSON.stringify(
+			{
+				description:
+					"Scope-aware names inferred from recovered code. Framework runtime code is excluded from the app.",
+				bindings: variables.map(({ binding, ...entry }) => entry),
+			},
+			null,
+			2,
+		) + "\n",
+	);
+console.log(
+	checkOnly
+		? "Checking saved scoped names."
+		: "Saved the root variable map. Applying scoped names.",
 );
-console.log("Saved the root variable map. Applying scoped names.");
 
 // The map is saved first, then loaded and applied using Babel's scope bindings.
-const saved = JSON.parse(readFileSync(variableMapPath, "utf8")).bindings;
+const saved = checkOnly
+	? variables.map(({ binding, ...entry }) => entry)
+	: JSON.parse(readFileSync(variableMapPath, "utf8")).bindings;
 const renamedBindings = new Map(
 	variables.map(({ binding }, index) => [binding, saved[index]]),
 );
@@ -1103,29 +1128,63 @@ for (const [file, statements] of modules) {
 			"new URL(`/_next/static/workers/68c63b8b-Bl6VHrTP.js`, `${import.meta.url}`)",
 			'new URL("workers/font.worker.js", new URL(import.meta.env.BASE_URL, location.origin))',
 		);
-	writeFileSync(target, code);
+	if (checkOnly) {
+		const clean = (source) => {
+			const ast = parse(source, { sourceType: "module", plugins: ["jsx"] });
+			traverse(ast, {
+				JSXElement(p) {
+					p.node.children = p.node.children.filter(
+						(child) => !t.isJSXText(child) || /\S/.test(child.value),
+					);
+				},
+				JSXFragment(p) {
+					p.node.children = p.node.children.filter(
+						(child) => !t.isJSXText(child) || /\S/.test(child.value),
+					);
+				},
+			});
+			return JSON.stringify(ast, (key, value) =>
+				[
+					"start",
+					"end",
+					"loc",
+					"extra",
+					"comments",
+					"leadingComments",
+					"trailingComments",
+					"innerComments",
+					"shorthand",
+				].includes(key)
+					? undefined
+					: value,
+			);
+		};
+		const current = clean(readFileSync(target, "utf8")),
+			generated = clean(code);
+		if (current !== generated) {
+			let index = 0;
+			while (current[index] === generated[index] && index < current.length)
+				index++;
+			console.error(
+				"Current:",
+				current.slice(index - 80, index + 150),
+				"\nGenerated:",
+				generated.slice(index - 80, index + 150),
+			);
+			throw Error("Recovery no longer matches current source: " + file);
+		}
+	} else writeFileSync(target, code);
+}
+
+if (checkOnly) {
+	console.log(
+		"Recovery check passed: saved semantic names reproduce all application modules.",
+	);
+	process.exit(0);
 }
 
 mkdirSync(path.join(output, "styles"), { recursive: true });
-copyFileSync(
-	path.join(root, "resources/_next/static/css/BfIB-ao_.css"),
-	path.join(output, "styles/site.css"),
-);
-const html = readFileSync(path.join(root, "resources/index.html"), "utf8");
-const fonts = html
-	.match(/<style data-vinext-fonts>([\s\S]*?)<\/style>/)[1]
-	.replaceAll("/_next/static/_vinext_fonts/", "/fonts/");
-writeFileSync(path.join(output, "styles/fonts.css"), fonts);
-const fontsRoot = path.join(root, "resources/_next/static/_vinext_fonts");
-for (const directory of readdirSync(fontsRoot)) {
-	const target = path.join(root, "web/public/fonts", directory);
-	mkdirSync(target, { recursive: true });
-	for (const font of readdirSync(path.join(fontsRoot, directory)))
-		copyFileSync(
-			path.join(fontsRoot, directory, font),
-			path.join(target, font),
-		);
-}
+recoverFonts(root);
 for (const file of ["icon.png", "apple-icon.png", "manifest.webmanifest"])
 	copyFileSync(
 		path.join(root, "resources", file),

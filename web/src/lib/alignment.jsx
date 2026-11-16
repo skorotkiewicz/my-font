@@ -6,9 +6,12 @@ var defaultPlacement = {
 	scale: 1,
 	dy: 0,
 };
-var roundHundredths = (argument) => Math.round(argument * 100) / 100;
-var placementTransform = ({ scale: argument, dy: argument2 }, argument3 = 0) =>
-	`translate(${roundHundredths(argument3)} ${roundHundredths((1 - argument) * 920 - argument2)}) scale(${roundHundredths(argument)})`;
+var roundHundredths = (number) => Math.round(number * 100) / 100;
+var placementTransform = (
+	{ scale, dy: verticalOffset },
+	horizontalOffset = 0,
+) =>
+	`translate(${roundHundredths(horizontalOffset)} ${roundHundredths((1 - scale) * 920 - verticalOffset)}) scale(${roundHundredths(scale)})`;
 var defaultMetrics = {
 	xHeight: 500,
 	ascender: 700,
@@ -21,9 +24,9 @@ var baselineTolerance = 70;
 var minimumInkHeight = 50;
 var metricSampleCount = 4;
 var characterRules = new Map();
-var addCharacterRules = (argument, argument2) =>
-	[...argument].forEach((argument3) =>
-		characterRules.set(argument3.codePointAt(0), argument2),
+var addCharacterRules = (characters, rule) =>
+	[...characters].forEach((character) =>
+		characterRules.set(character.codePointAt(0), rule),
 	);
 addCharacterRules(`acemnorsuvwxz`, {
 	top: `xHeight`,
@@ -60,8 +63,8 @@ addCharacterRules(`0123456789`, {
 	top: `digitHeight`,
 	stands: true,
 });
-function strokeInkBounds(argument) {
-	let bounds = polygonBounds(polygonsForStroke(argument));
+function strokeInkBounds(stroke) {
+	let bounds = polygonBounds(polygonsForStroke(stroke));
 	return (
 		bounds && {
 			xMin: bounds.xMin,
@@ -72,167 +75,186 @@ function strokeInkBounds(argument) {
 	);
 }
 var drawingBoundsCache = new WeakMap();
-function drawingBounds(argument, drawing) {
-	let value = drawingBoundsCache.get(drawing);
-	if (value !== undefined) {
-		return value;
+function drawingBounds(codePoint, drawing) {
+	let cachedBounds = drawingBoundsCache.get(drawing);
+	if (cachedBounds !== undefined) {
+		return cachedBounds;
 	}
-	let value2 = drawing.strokes.flatMap(
-		(argument2) => strokeInkBounds(argument2) ?? [],
+	let strokeBounds = drawing.strokes.flatMap(
+		(stroke) => strokeInkBounds(stroke) ?? [],
 	);
-	if (value2.length) {
-		let value3 = value2.reduce((bounds, bounds2) => ({
+	if (strokeBounds.length) {
+		let combinedBounds = strokeBounds.reduce((bounds, bounds2) => ({
 			xMin: Math.min(bounds.xMin, bounds2.xMin),
 			xMax: Math.max(bounds.xMax, bounds2.xMax),
 			yMin: Math.min(bounds.yMin, bounds2.yMin),
 			yMax: Math.max(bounds.yMax, bounds2.yMax),
 		}));
-		let value4 = (argument2) => argument2.yMax - argument2.yMin;
-		let value5 = characterRules.get(argument)?.stem
-			? value2.reduce((argument2, argument3) =>
-					value4(argument3) > value4(argument2) ? argument3 : argument2,
+		let boundsHeight = (candidateBounds) =>
+			candidateBounds.yMax - candidateBounds.yMin;
+		let bodyBounds = characterRules.get(codePoint)?.stem
+			? strokeBounds.reduce((tallestBounds, nextBounds) =>
+					boundsHeight(nextBounds) > boundsHeight(tallestBounds)
+						? nextBounds
+						: tallestBounds,
 				)
-			: value3;
-		value = {
-			ink: value3,
+			: combinedBounds;
+		cachedBounds = {
+			ink: combinedBounds,
 			body: {
-				yMin: value5.yMin,
-				yMax: value5.yMax,
+				yMin: bodyBounds.yMin,
+				yMax: bodyBounds.yMax,
 			},
 		};
 	} else {
-		value = null;
+		cachedBounds = null;
 	}
-	drawingBoundsCache.set(drawing, value);
-	return value;
+	drawingBoundsCache.set(drawing, cachedBounds);
+	return cachedBounds;
 }
-var inkBounds = (argument, argument2) =>
-	drawingBounds(argument, argument2)?.ink ?? null;
-var blendMedian = (argument, argument2) =>
-	argument.length
-		? argument2 +
-			(median(argument) - argument2) *
-				Math.min(1, argument.length / metricSampleCount)
-		: argument2;
-function placementFor(argument, argument2, argument3, argument4) {
-	if (!argument || argument2.yMax - argument2.yMin < 1) {
+var inkBounds = (codePoint, drawing) =>
+	drawingBounds(codePoint, drawing)?.ink ?? null;
+var blendMedian = (samples, fallback) =>
+	samples.length
+		? fallback +
+			(median(samples) - fallback) *
+				Math.min(1, samples.length / metricSampleCount)
+		: fallback;
+function placementFor(rule, bodyBounds, baseline, metrics) {
+	if (!rule || bodyBounds.yMax - bodyBounds.yMin < 1) {
 		return defaultPlacement;
 	}
-	let value = argument.top
-		? argument3 + argument4[argument.top] - argument2.yMax
+	let topOffset = rule.top
+		? baseline + metrics[rule.top] - bodyBounds.yMax
 		: NaN;
-	let value2 = argument.stands ? argument3 - argument2.yMin : NaN;
-	let value3 = Math.abs(value) <= (argument.topReach ?? verticalTolerance);
-	let value4 = value2 <= baselineTolerance && value2 >= -130;
-	if (value3 && value4) {
-		let value5 = argument2.yMax + value * minimumInkScale;
-		let value6 = argument2.yMin + value2 * minimumInkScale;
-		let value7 = clamp(
-			(value5 - value6) / (argument2.yMax - argument2.yMin),
+	let baselineOffset = rule.stands ? baseline - bodyBounds.yMin : NaN;
+	let topWithinTolerance =
+		Math.abs(topOffset) <= (rule.topReach ?? verticalTolerance);
+	let baselineWithinTolerance =
+		baselineOffset <= baselineTolerance && baselineOffset >= -130;
+	if (topWithinTolerance && baselineWithinTolerance) {
+		let adjustedTop = bodyBounds.yMax + topOffset * minimumInkScale;
+		let adjustedBottom = bodyBounds.yMin + baselineOffset * minimumInkScale;
+		let inkScale = clamp(
+			(adjustedTop - adjustedBottom) / (bodyBounds.yMax - bodyBounds.yMin),
 			0.88,
 			1.12,
 		);
 		return {
-			scale: value7,
-			dy: value6 - argument2.yMin * value7,
+			scale: inkScale,
+			dy: adjustedBottom - bodyBounds.yMin * inkScale,
 		};
 	}
-	if (value4) {
+	if (baselineWithinTolerance) {
 		return {
 			scale: 1,
-			dy: value2 * minimumInkScale,
+			dy: baselineOffset * minimumInkScale,
 		};
-	} else if (value3) {
+	} else if (topWithinTolerance) {
 		return {
 			scale: 1,
-			dy: value * minimumInkScale,
+			dy: topOffset * minimumInkScale,
 		};
 	} else {
 		return defaultPlacement;
 	}
 }
 function applyDrawingFix(
-	argument,
-	argument2,
-	{ scale: argument3, dy: argument4 },
+	placement,
+	drawingInk,
+	{ scale: fixScale, dy: fixVerticalOffset },
 ) {
-	if (argument3 === 1 && argument4 === 0) {
-		return argument;
+	if (fixScale === 1 && fixVerticalOffset === 0) {
+		return placement;
 	}
-	let value =
-		(argument.scale * (argument2.yMin + argument2.yMax)) / 2 + argument.dy;
+	let transformedCenterY =
+		(placement.scale * (drawingInk.yMin + drawingInk.yMax)) / 2 + placement.dy;
 	return {
-		scale: argument.scale * argument3,
-		dy: argument.dy * argument3 + value * (1 - argument3) - argument4,
+		scale: placement.scale * fixScale,
+		dy:
+			placement.dy * fixScale +
+			transformedCenterY * (1 - fixScale) -
+			fixVerticalOffset,
 	};
 }
-function alignDrawings(argument, argument2) {
-	let value = argument.flatMap(({ cp: argument3, drawing: argument4 }) => {
-		let value6 = drawingBounds(argument3, argument4);
-		if (value6) {
+function alignDrawings(drawings, tidy) {
+	let boundedDrawings = drawings.flatMap(({ cp: codePoint, drawing }) => {
+		let bounds = drawingBounds(codePoint, drawing);
+		if (bounds) {
 			return [
 				{
-					cp: argument3,
-					drawing: argument4,
-					rule: characterRules.get(argument3),
-					...value6,
+					cp: codePoint,
+					drawing: drawing,
+					rule: characterRules.get(codePoint),
+					...bounds,
 				},
 			];
 		} else {
 			return [];
 		}
 	});
-	let value2 = new Map();
-	if (!argument2) {
-		for (let value6 of value) {
-			value2.set(
-				value6.cp,
-				applyDrawingFix(defaultPlacement, value6.ink, value6.drawing.fix),
+	let placements = new Map();
+	if (!tidy) {
+		for (let unalignedDrawing of boundedDrawings) {
+			placements.set(
+				unalignedDrawing.cp,
+				applyDrawingFix(
+					defaultPlacement,
+					unalignedDrawing.ink,
+					unalignedDrawing.drawing.fix,
+				),
 			);
 		}
 		return {
-			place: value2,
+			place: placements,
 			lines: defaultMetrics,
 		};
 	}
-	let value3 = blendMedian(
-		value.flatMap((argument3) =>
-			argument3.rule?.stands ? [argument3.body.yMin] : [],
+	let baseline = blendMedian(
+		boundedDrawings.flatMap((baselineSample) =>
+			baselineSample.rule?.stands ? [baselineSample.body.yMin] : [],
 		),
 		0,
 	);
-	let value4 = (argument3) =>
+	let metricHeight = (metricName) =>
 		blendMedian(
-			value.flatMap((argument4) =>
-				argument4.rule?.top === argument3 ? [argument4.body.yMax - value3] : [],
+			boundedDrawings.flatMap((heightSample) =>
+				heightSample.rule?.top === metricName
+					? [heightSample.body.yMax - baseline]
+					: [],
 			),
-			defaultMetrics[argument3],
+			defaultMetrics[metricName],
 		);
-	let value5 = {
-		xHeight: value4(`xHeight`),
-		ascender: value4(`ascender`),
-		capHeight: value4(`capHeight`),
-		digitHeight: value4(`digitHeight`),
+	let metrics = {
+		xHeight: metricHeight(`xHeight`),
+		ascender: metricHeight(`ascender`),
+		capHeight: metricHeight(`capHeight`),
+		digitHeight: metricHeight(`digitHeight`),
 	};
-	for (let value6 of value) {
-		let value7 = placementFor(value6.rule, value6.body, value3, value5);
-		value2.set(
-			value6.cp,
+	for (let boundedDrawing of boundedDrawings) {
+		let placement = placementFor(
+			boundedDrawing.rule,
+			boundedDrawing.body,
+			baseline,
+			metrics,
+		);
+		placements.set(
+			boundedDrawing.cp,
 			applyDrawingFix(
 				{
-					scale: value7.scale,
-					dy: value7.dy - value3,
+					scale: placement.scale,
+					dy: placement.dy - baseline,
 				},
-				value6.ink,
-				value6.drawing.fix,
+				boundedDrawing.ink,
+				boundedDrawing.drawing.fix,
 			),
 		);
 	}
 	return {
-		place: value2,
-		lines: value5,
+		place: placements,
+		lines: metrics,
 	};
 }
-var alignProject = (argument) =>
-	alignDrawings(writtenDrawings(argument), argument.settings.tidy);
+var alignProject = (project) =>
+	alignDrawings(writtenDrawings(project), project.settings.tidy);
 export { defaultPlacement, placementTransform, inkBounds, alignProject };

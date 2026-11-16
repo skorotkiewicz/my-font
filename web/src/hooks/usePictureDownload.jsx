@@ -13,53 +13,56 @@ var canSharePicture = () =>
 			}),
 		],
 	});
-function usePictureDownload(argument) {
-	let [value] = React.useState(canSharePicture);
-	let [value2, value3] = React.useState();
-	let [value4, value5] = React.useState();
-	let value6 = pictureFileName(argument.name);
+function usePictureDownload(picture) {
+	let [supportsSharing] = React.useState(canSharePicture);
+	let [preparedPicture, setPreparedPicture] = React.useState();
+	let [sentPicture, setSentPicture] = React.useState();
+	let fileName = pictureFileName(picture.name);
 	React.useEffect(() => {
-		let value8 = true;
-		let value9 = setTimeout(() => {
-			pictureBlob(argument, value6).then(
-				(argument2) =>
-					value8 &&
-					value3({
-						of: argument,
-						file: argument2,
+		let active = true;
+		let preparationTimer = setTimeout(() => {
+			pictureBlob(picture, fileName).then(
+				(pictureFile) =>
+					active &&
+					setPreparedPicture({
+						of: picture,
+						file: pictureFile,
 					}),
 			);
 		}, pictureSentDelay);
 		return () => {
-			value8 = false;
-			clearTimeout(value9);
+			active = false;
+			clearTimeout(preparationTimer);
 		};
-	}, [argument, value6]);
-	let value7 = async () => {
-		let value8 =
-			value2?.of === argument
-				? value2.file
-				: await pictureBlob(argument, value6);
-		if (value) {
+	}, [picture, fileName]);
+	let sendPicture = async () => {
+		let pictureFile =
+			preparedPicture?.of === picture
+				? preparedPicture.file
+				: await pictureBlob(picture, fileName);
+		if (supportsSharing) {
 			try {
 				await navigator.share({
-					files: [value8],
+					files: [pictureFile],
 				});
 				return;
-			} catch (value9) {
-				if (value9 instanceof DOMException && value9.name === `AbortError`) {
+			} catch (shareError) {
+				if (
+					shareError instanceof DOMException &&
+					shareError.name === `AbortError`
+				) {
 					return;
 				}
 			}
 		}
-		downloadBlob(value8, value8.name);
-		value5(argument);
+		downloadBlob(pictureFile, pictureFile.name);
+		setSentPicture(picture);
 	};
 	return {
-		shares: value,
-		send: () => void value7(),
-		sent: value4 === argument,
-		empty: !argument.text.trim(),
+		shares: supportsSharing,
+		send: () => void sendPicture(),
+		sent: sentPicture === picture,
+		empty: !picture.text.trim(),
 	};
 }
 export { usePictureDownload };

@@ -14,69 +14,70 @@ var downloadFormats = {
 		use: `Use it on a website`,
 	},
 };
-var formatBytes = (argument) =>
-	`${Math.max(1, Math.round(argument / 1024))} KB`;
-function downloadBlob(argument, argument2) {
-	let value = URL.createObjectURL(argument);
+var formatBytes = (byteLength) =>
+	`${Math.max(1, Math.round(byteLength / 1024))} KB`;
+function downloadBlob(blob, fileName) {
+	let downloadUrl = URL.createObjectURL(blob);
 	Object.assign(document.createElement(`a`), {
-		href: value,
-		download: argument2,
+		href: downloadUrl,
+		download: fileName,
 	}).click();
-	setTimeout(() => URL.revokeObjectURL(value), 10000);
+	setTimeout(() => URL.revokeObjectURL(downloadUrl), 10000);
 }
-var downloadFont = (argument, argument2, argument3) =>
+var downloadFont = (fontBytes, fileName, format) =>
 	downloadBlob(
-		new Blob([argument], {
-			type: `font/${argument3}`,
+		new Blob([fontBytes], {
+			type: `font/${format}`,
 		}),
-		argument2,
+		fileName,
 	);
-function useAsyncBuffer(argument, argument2) {
-	let [value, value2] = React.useState();
-	let value3 = React.useEffectEvent(argument2);
+function useAsyncBuffer(sourceBuffer, transformBuffer) {
+	let [bufferState, setBufferState] = React.useState();
+	let runTransform = React.useEffectEvent(transformBuffer);
 	React.useEffect(() => {
-		if (!argument) {
+		if (!sourceBuffer) {
 			return;
 		}
-		let value4 = true;
-		value3(argument).then(
-			({ buffer: argument3 }) =>
-				value4 &&
-				value2({
-					from: argument,
-					buffer: argument3,
+		let active = true;
+		runTransform(sourceBuffer).then(
+			({ buffer: transformedBuffer }) =>
+				active &&
+				setBufferState({
+					from: sourceBuffer,
+					buffer: transformedBuffer,
 				}),
 		);
 		return () => {
-			value4 = false;
+			active = false;
 		};
-	}, [argument]);
+	}, [sourceBuffer]);
 	return {
-		buffer: value?.buffer,
-		fresh: value !== undefined && value.from === argument,
+		buffer: bufferState?.buffer,
+		fresh: bufferState !== undefined && bufferState.from === sourceBuffer,
 	};
 }
-var freshBuffer = ({ buffer: argument, fresh: argument2 }) =>
-	argument2 ? argument : undefined;
-function useFontDownloads(argument, argument2, argument3) {
-	let value = argument3?.of === argument ? argument3.otf : undefined;
-	let value2 = useAsyncBuffer(value, (argument4) =>
-		packProjectFont(argument4, argument),
+var freshBuffer = ({ buffer, fresh }) => (fresh ? buffer : undefined);
+function useFontDownloads(project, alignment, liveFont) {
+	let currentOtf = liveFont?.of === project ? liveFont.otf : undefined;
+	let packedOtf = useAsyncBuffer(currentOtf, (otfBuffer) =>
+		packProjectFont(otfBuffer, project),
 	);
-	let value3 = useAsyncBuffer(value, convertWoff2);
+	let compressedWoff2 = useAsyncBuffer(currentOtf, convertWoff2);
 	return {
-		otf: value2.buffer,
-		woff2: value3.buffer,
-		get: async (argument4) => {
-			let value4 = freshBuffer(argument4 === `otf` ? value2 : value3);
-			if (value4) {
-				return value4;
+		otf: packedOtf.buffer,
+		woff2: compressedWoff2.buffer,
+		get: async (format) => {
+			let cachedBuffer = freshBuffer(
+				format === `otf` ? packedOtf : compressedWoff2,
+			);
+			if (cachedBuffer) {
+				return cachedBuffer;
 			}
-			let value5 = await buildProjectFont(argument, argument2);
+			let builtFont = await buildProjectFont(project, alignment);
 			return (
-				await (argument4 === `otf`
-					? packProjectFont(value5.buffer, argument)
-					: convertWoff2(value5.buffer))
+				await (format === `otf`
+					? packProjectFont(builtFont.buffer, project)
+					: convertWoff2(builtFont.buffer))
 			).buffer;
 		},
 	};

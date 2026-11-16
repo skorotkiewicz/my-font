@@ -57,47 +57,47 @@ var saveStatusContent = {
 		),
 	},
 };
-function SaveStatus({ className: argument = `` }) {
-	let { state: value } = useWrite();
-	let { status: value2, drawn: value3 } = value;
-	if (value2 === `unsaved`) {
+function SaveStatus({ className = `` }) {
+	let { state } = useWrite();
+	let { status, drawn } = state;
+	if (status === `unsaved`) {
 		return (
 			<p
 				role="status"
-				className={`h-8 items-center gap-1.5 rounded-full bg-paper pr-3.5 pl-2.5 text-caption font-medium text-ink ${argument}`}
+				className={`h-8 items-center gap-1.5 rounded-full bg-paper pr-3.5 pl-2.5 text-caption font-medium text-ink ${className}`}
 			>
 				<WarningIcon className="icon-in size-4.5 shrink-0 text-danger" />
 				{`Not saved. Export to keep your letters.`}
 			</p>
 		);
 	}
-	let { icon: value4, text: value5 } =
+	let { icon: statusIcon, text: statusText } =
 		saveStatusContent[
-			value2 === `loading` ? `loading` : value3.size ? `saved` : `fresh`
+			status === `loading` ? `loading` : drawn.size ? `saved` : `fresh`
 		];
 	return (
 		<p
 			role="status"
-			className={`h-8 items-center gap-1.5 text-caption font-medium text-paper/90 ${argument}`}
+			className={`h-8 items-center gap-1.5 text-caption font-medium text-paper/90 ${className}`}
 		>
-			{value4}
-			<span>{value5}</span>
+			{statusIcon}
+			<span>{statusText}</span>
 		</p>
 	);
 }
 function AppHeader() {
-	let { state: value, actions: value2 } = useWrite();
-	let value3 = value.status !== `loading` && value.drawn.size === 0;
+	let { state, actions } = useWrite();
+	let isEmpty = state.status !== `loading` && state.drawn.size === 0;
 	return (
 		<header className="flex shrink-0 items-center justify-between gap-3 px-5 pt-[calc(env(safe-area-inset-top)+0.5rem)] compact:px-4 lg:gap-6 lg:px-20 lg:pt-8">
 			<Wordmark className="lg:text-4xl" />
 			<div className="flex min-w-0 items-center gap-5">
 				<SaveStatus className="hidden min-w-0 lg:flex short-landscape:flex" />
 				<div data-anchor="actions" className="flex shrink-0 gap-2">
-					{value3 ? (
+					{isEmpty ? (
 						<span className="hidden lg:block">
 							<ToolButton
-								onClick={value2.chooseFont}
+								onClick={actions.chooseFont}
 								aria-label="Open a font you made with Ductus"
 								className="pl-3.5"
 							>
@@ -108,12 +108,12 @@ function AppHeader() {
 					) : null}
 					<ToolButton
 						aria-haspopup="dialog"
-						onClick={() => value2.openSheet(`adjust`)}
+						onClick={() => actions.openSheet(`adjust`)}
 						className="lg:px-4.5"
 					>{`Adjust`}</ToolButton>
 					<ToolButton
 						aria-haspopup="dialog"
-						onClick={() => value2.openSheet(`export`)}
+						onClick={() => actions.openSheet(`export`)}
 						onPointerEnter={preloadExport}
 						onFocus={preloadExport}
 						className="lg:px-4.5"

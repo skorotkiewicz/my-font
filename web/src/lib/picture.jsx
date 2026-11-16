@@ -4,73 +4,76 @@ import { wordmarkShape } from "../components/Wordmark.jsx";
 var pictureLineHeight = 1.2;
 var pictureFontScale = 0.92;
 var pictureFontSizes = [200, 176, 154, 136, 120, 106, 94, 84, 74, 66, 58];
-function measureSpacedText(argument, argument2, argument3) {
-	let value = [...argument];
-	let value2 = 1;
+function measureSpacedText(text, maxWidth, measureText) {
+	let characters = [...text];
+	let fittingLength = 1;
 	while (
-		value2 < value.length &&
-		argument3(value.slice(0, value2 + 1).join(``)) <= argument2
+		fittingLength < characters.length &&
+		measureText(characters.slice(0, fittingLength + 1).join(``)) <= maxWidth
 	) {
-		value2++;
+		fittingLength++;
 	}
-	return value.slice(0, value2).join(``);
+	return characters.slice(0, fittingLength).join(``);
 }
-function wrapPictureText(argument, argument2, argument3) {
-	let value = [];
-	for (let value2 of argument.split(`
+function wrapPictureText(text, maxWidth, measureText) {
+	let wrappedLines = [];
+	for (let paragraph of text.split(`
 `)) {
-		let value3 = ``;
-		for (let value4 of value2.split(/\s+/).filter(Boolean)) {
-			let value5 = value3 ? `${value3} ${value4}` : value4;
-			if (argument3(value5) <= argument2) {
-				value3 = value5;
+		let currentLine = ``;
+		for (let word of paragraph.split(/\s+/).filter(Boolean)) {
+			let candidateLine = currentLine ? `${currentLine} ${word}` : word;
+			if (measureText(candidateLine) <= maxWidth) {
+				currentLine = candidateLine;
 				continue;
 			}
-			if (value3) {
-				value.push(value3);
+			if (currentLine) {
+				wrappedLines.push(currentLine);
 			}
-			let value6 = value4;
+			let remainingWord = word;
 			for (
-				let value7 = measureSpacedText(value6, argument2, argument3);
-				value7.length < value6.length;
-				value7 = measureSpacedText(value6, argument2, argument3)
+				let wordChunk = measureSpacedText(remainingWord, maxWidth, measureText);
+				wordChunk.length < remainingWord.length;
+				wordChunk = measureSpacedText(remainingWord, maxWidth, measureText)
 			) {
-				value.push(value7);
-				value6 = value6.slice(value7.length);
+				wrappedLines.push(wordChunk);
+				remainingWord = remainingWord.slice(wordChunk.length);
 			}
-			value3 = value6;
+			currentLine = remainingWord;
 		}
-		value.push(value3);
+		wrappedLines.push(currentLine);
 	}
-	return value;
+	return wrappedLines;
 }
-function truncatePictureText(argument, argument2, argument3, argument4) {
-	let value = argument.slice(0, argument2);
-	let value2 = [...value[argument2 - 1]];
-	while (value2.length && argument4(`${value2.join(``)}…`) > argument3) {
-		value2 = value2.slice(0, -1);
+function truncatePictureText(lines, maxLines, maxWidth, measureText) {
+	let truncatedLines = lines.slice(0, maxLines);
+	let lastLineCharacters = [...truncatedLines[maxLines - 1]];
+	while (
+		lastLineCharacters.length &&
+		measureText(`${lastLineCharacters.join(``)}…`) > maxWidth
+	) {
+		lastLineCharacters = lastLineCharacters.slice(0, -1);
 	}
-	value[argument2 - 1] = `${value2.join(``).trimEnd()}…`;
-	return value;
+	truncatedLines[maxLines - 1] = `${lastLineCharacters.join(``).trimEnd()}…`;
+	return truncatedLines;
 }
-function fitPictureText(argument, argument2, argument3) {
-	let value = pictureFontSizes[pictureFontSizes.length - 1];
-	for (let value2 of pictureFontSizes) {
-		let value3 = Math.floor(argument2.height / (value2 * pictureLineHeight));
-		let value4 = argument2.width / value2;
-		let value5 = wrapPictureText(argument.trim(), value4, argument3);
-		let value6 = value5.length <= value3;
-		if (!value6 && value2 !== value) {
+function fitPictureText(text, box, measureText) {
+	let smallestSize = pictureFontSizes[pictureFontSizes.length - 1];
+	for (let fontSize of pictureFontSizes) {
+		let maxRows = Math.floor(box.height / (fontSize * pictureLineHeight));
+		let maxLineWidth = box.width / fontSize;
+		let wrappedLines = wrapPictureText(text.trim(), maxLineWidth, measureText);
+		let fitsAllLines = wrappedLines.length <= maxRows;
+		if (!fitsAllLines && fontSize !== smallestSize) {
 			continue;
 		}
-		let value7 = value6
-			? value5
-			: truncatePictureText(value5, value3, value4, argument3);
+		let visibleLines = fitsAllLines
+			? wrappedLines
+			: truncatePictureText(wrappedLines, maxRows, maxLineWidth, measureText);
 		return {
-			size: value2,
-			rows: value3,
-			first: Math.floor((value3 - value7.length) / 2),
-			lines: value7,
+			size: fontSize,
+			rows: maxRows,
+			first: Math.floor((maxRows - visibleLines.length) / 2),
+			lines: visibleLines,
 		};
 	}
 	throw Error(`unreachable: the smallest size always sets a page`);
@@ -92,203 +95,215 @@ var pictureRuleWidth = 3;
 var pictureGridWidth = 4;
 var pictureLineSpacing = 100;
 function pictureFonts() {
-	let value = getComputedStyle(document.documentElement);
+	let computedStyle = getComputedStyle(document.documentElement);
 	return {
-		display: value.getPropertyValue(`--font-display`).trim(),
-		sans: value.getPropertyValue(`--font-sans`).trim(),
+		display: computedStyle.getPropertyValue(`--font-display`).trim(),
+		sans: computedStyle.getPropertyValue(`--font-sans`).trim(),
 	};
 }
 function paintWordmark(
-	argument,
-	argument2,
-	argument3,
-	argument4,
-	argument5,
-	argument6,
+	context,
+	x,
+	baseline,
+	fontSize,
+	displayFont,
+	paperStyle,
 ) {
-	argument.font = `900 expanded ${argument4}px ${argument5}`;
-	argument.fillStyle = argument6.type;
-	let { fontBoundingBoxAscent: value, fontBoundingBoxDescent: value2 } =
-		argument.measureText(`duc`);
-	for (let value10 of `duc`) {
-		argument.fillText(value10, argument2, argument3);
-		argument2 +=
-			argument.measureText(value10).width + wordmarkShape.tracking * argument4;
+	context.font = `900 expanded ${fontSize}px ${displayFont}`;
+	context.fillStyle = paperStyle.type;
+	let { fontBoundingBoxAscent: ascent, fontBoundingBoxDescent: descent } =
+		context.measureText(`duc`);
+	for (let character of `duc`) {
+		context.fillText(character, x, baseline);
+		x +=
+			context.measureText(character).width + wordmarkShape.tracking * fontSize;
 	}
-	let value3 = argument3 + value2 + (argument4 - value - value2) / 2;
-	let { hand: value4, viewBox: value5, paths: value6 } = wordmarkShape;
-	let value7 = Math.min(
-		(value4.width * argument4) / value5.width,
-		(value4.height * argument4) / value5.height,
+	let textBottom = baseline + descent + (fontSize - ascent - descent) / 2;
+	let { hand: handShape, viewBox, paths } = wordmarkShape;
+	let handScale = Math.min(
+		(handShape.width * fontSize) / viewBox.width,
+		(handShape.height * fontSize) / viewBox.height,
 	);
-	let value8 =
-		argument2 +
-		value4.before * argument4 +
-		(value4.width * argument4 - value5.width * value7) / 2;
-	let value9 =
-		value3 -
-		(value4.lift + value4.height) * argument4 +
-		(value4.height * argument4 - value5.height * value7) / 2;
-	argument.save();
-	argument.translate(value8 - value5.x * value7, value9 - value5.y * value7);
-	argument.scale(value7, value7);
-	argument.fillStyle = argument6.hand;
-	for (let value10 of value6) {
-		argument.fill(new Path2D(value10));
+	let handX =
+		x +
+		handShape.before * fontSize +
+		(handShape.width * fontSize - viewBox.width * handScale) / 2;
+	let handY =
+		textBottom -
+		(handShape.lift + handShape.height) * fontSize +
+		(handShape.height * fontSize - viewBox.height * handScale) / 2;
+	context.save();
+	context.translate(
+		handX - viewBox.x * handScale,
+		handY - viewBox.y * handScale,
+	);
+	context.scale(handScale, handScale);
+	context.fillStyle = paperStyle.hand;
+	for (let pathData of paths) {
+		context.fill(new Path2D(pathData));
 	}
-	argument.restore();
+	context.restore();
 }
-function paintRuling(argument, argument2, argument3, argument4, argument5) {
-	if (argument2 === `plain`) {
+function paintRuling(context, ruling, paperStyle, layout, baselineFor) {
+	if (ruling === `plain`) {
 		return;
 	}
-	argument.fillStyle = argument3.type;
-	if (argument2 === `lines`) {
-		argument.globalAlpha = argument3.rule;
-		for (let value5 = 0; value5 < argument4.rows; value5++) {
-			argument.fillRect(
+	context.fillStyle = paperStyle.type;
+	if (ruling === `lines`) {
+		context.globalAlpha = paperStyle.rule;
+		for (let rowIndex = 0; rowIndex < layout.rows; rowIndex++) {
+			context.fillRect(
 				0,
-				argument5(value5) - pictureRuleWidth / 2,
+				baselineFor(rowIndex) - pictureRuleWidth / 2,
 				pictureSize,
 				pictureRuleWidth,
 			);
 		}
-		argument.globalAlpha = 1;
+		context.globalAlpha = 1;
 		return;
 	}
-	let value = (argument4.size * pictureLineHeight) / pictureGridWidth;
-	let value2 = argument5(argument4.rows - 1) + value;
-	let value3 = [];
+	let gridSpacing = (layout.size * pictureLineHeight) / pictureGridWidth;
+	let gridBottom = baselineFor(layout.rows - 1) + gridSpacing;
+	let horizontalPositions = [];
 	for (
-		let value5 = argument5(0) % value;
-		value5 <= value2 + 0.5;
-		value5 += value
+		let gridY = baselineFor(0) % gridSpacing;
+		gridY <= gridBottom + 0.5;
+		gridY += gridSpacing
 	) {
-		value3.push(Math.round(value5));
+		horizontalPositions.push(Math.round(gridY));
 	}
-	let value4 = [];
+	let verticalPositions = [];
 	for (
-		let value5 = pictureTextBox.x % value;
-		value5 < pictureSize;
-		value5 += value
+		let gridX = pictureTextBox.x % gridSpacing;
+		gridX < pictureSize;
+		gridX += gridSpacing
 	) {
-		value4.push(Math.round(value5));
+		verticalPositions.push(Math.round(gridX));
 	}
-	if (argument2 === `grid`) {
-		argument.globalAlpha = argument3.rule * 0.75;
-		for (let value5 of value3) {
-			argument.fillRect(0, value5 - 1, pictureSize, 2);
+	if (ruling === `grid`) {
+		context.globalAlpha = paperStyle.rule * 0.75;
+		for (let lineY of horizontalPositions) {
+			context.fillRect(0, lineY - 1, pictureSize, 2);
 		}
-		for (let value5 of value4) {
-			argument.fillRect(value5 - 1, 0, 2, value2);
+		for (let lineX of verticalPositions) {
+			context.fillRect(lineX - 1, 0, 2, gridBottom);
 		}
 	} else {
-		argument.globalAlpha = Math.min(1, argument3.rule * 1.6);
-		let value5 = Math.max(3, value / 15);
-		argument.beginPath();
-		for (let value6 of value3) {
-			for (let value7 of value4) {
-				argument.moveTo(value7 + value5, value6);
-				argument.arc(value7, value6, value5, 0, Math.PI * 2);
+		context.globalAlpha = Math.min(1, paperStyle.rule * 1.6);
+		let dotRadius = Math.max(3, gridSpacing / 15);
+		context.beginPath();
+		for (let dotY of horizontalPositions) {
+			for (let dotX of verticalPositions) {
+				context.moveTo(dotX + dotRadius, dotY);
+				context.arc(dotX, dotY, dotRadius, 0, Math.PI * 2);
 			}
 		}
-		argument.fill();
+		context.fill();
 	}
-	argument.globalAlpha = 1;
+	context.globalAlpha = 1;
 }
 function paintPicture(
-	argument,
+	canvas,
 	{
-		text: argument2,
-		name: argument3,
-		family: argument4,
-		isDrawn: argument5,
-		lines: argument6,
-		style: argument7,
+		text,
+		name,
+		family: fontFamily,
+		isDrawn,
+		lines: guideLines,
+		style: pictureStyle,
 	},
 ) {
-	let value = argument.getContext(`2d`);
-	if (!value) {
+	let context = canvas.getContext(`2d`);
+	if (!context) {
 		return;
 	}
-	let value2 = paperStyleFor(argument7.paper);
-	let value3 = pictureFonts();
-	let value4 = argument.width / pictureSize;
-	value.setTransform(value4, 0, 0, value4, 0, 0);
-	let value5 = argument4 ? `"${argument4}", ${value3.display}` : value3.display;
-	let value6 = (argument8, argument9) =>
-		argument8.hand
-			? `${argument9}px ${value5}`
-			: `400 ${(argument9 * argument8.scale).toFixed(2)}px ${value3.display}`;
-	let value7 = new Map();
-	let value8 = (argument8) => {
-		let value13 = value7.get(argument8);
-		if (value13 === undefined) {
-			value13 = 0;
-			for (let value14 of textRuns(argument8, argument5, argument6)) {
-				value.font = value6(value14, pictureLineSpacing);
-				value13 += value.measureText(value14.text).width / pictureLineSpacing;
+	let paperStyle = paperStyleFor(pictureStyle.paper);
+	let fonts = pictureFonts();
+	let canvasScale = canvas.width / pictureSize;
+	context.setTransform(canvasScale, 0, 0, canvasScale, 0, 0);
+	let handwritingFont = fontFamily
+		? `"${fontFamily}", ${fonts.display}`
+		: fonts.display;
+	let fontForRun = (run, fontSize) =>
+		run.hand
+			? `${fontSize}px ${handwritingFont}`
+			: `400 ${(fontSize * run.scale).toFixed(2)}px ${fonts.display}`;
+	let measurements = new Map();
+	let measureText = (measuredText) => {
+		let measuredWidth = measurements.get(measuredText);
+		if (measuredWidth === undefined) {
+			measuredWidth = 0;
+			for (let measuredRun of textRuns(measuredText, isDrawn, guideLines)) {
+				context.font = fontForRun(measuredRun, pictureLineSpacing);
+				measuredWidth +=
+					context.measureText(measuredRun.text).width / pictureLineSpacing;
 			}
-			value7.set(argument8, value13);
+			measurements.set(measuredText, measuredWidth);
 		}
-		return value13;
+		return measuredWidth;
 	};
-	value.globalAlpha = 1;
-	value.textAlign = `left`;
-	value.textBaseline = `alphabetic`;
-	value.fillStyle = value2.ground;
-	value.fillRect(0, 0, pictureSize, pictureSize);
-	let value9 = fitPictureText(argument2, pictureTextBox, value8);
-	let value10 = value9.size * pictureLineHeight;
-	let value11 =
-		pictureTextBox.y + (pictureTextBox.height - value9.rows * value10) / 2;
-	let value12 = (argument8) =>
-		Math.round(value11 + argument8 * value10 + value9.size * pictureFontScale);
-	paintRuling(value, argument7.ruling, value2, value9, value12);
-	value9.lines.forEach((argument8, argument9) => {
-		let value13 = pictureTextBox.x;
-		for (let value14 of textRuns(argument8, argument5, argument6)) {
-			value.font = value6(value14, value9.size);
-			value.fillStyle = value14.hand ? value2.hand : value2.type;
-			value.globalAlpha = value14.hand ? 1 : pictureOpacity;
-			value.fillText(value14.text, value13, value12(value9.first + argument9));
-			value13 += value.measureText(value14.text).width;
+	context.globalAlpha = 1;
+	context.textAlign = `left`;
+	context.textBaseline = `alphabetic`;
+	context.fillStyle = paperStyle.ground;
+	context.fillRect(0, 0, pictureSize, pictureSize);
+	let layout = fitPictureText(text, pictureTextBox, measureText);
+	let lineHeight = layout.size * pictureLineHeight;
+	let textTop =
+		pictureTextBox.y + (pictureTextBox.height - layout.rows * lineHeight) / 2;
+	let baselineFor = (rowIndex) =>
+		Math.round(
+			textTop + rowIndex * lineHeight + layout.size * pictureFontScale,
+		);
+	paintRuling(context, pictureStyle.ruling, paperStyle, layout, baselineFor);
+	layout.lines.forEach((lineText, lineIndex) => {
+		let textX = pictureTextBox.x;
+		for (let paintedRun of textRuns(lineText, isDrawn, guideLines)) {
+			context.font = fontForRun(paintedRun, layout.size);
+			context.fillStyle = paintedRun.hand ? paperStyle.hand : paperStyle.type;
+			context.globalAlpha = paintedRun.hand ? 1 : pictureOpacity;
+			context.fillText(
+				paintedRun.text,
+				textX,
+				baselineFor(layout.first + lineIndex),
+			);
+			textX += context.measureText(paintedRun.text).width;
 		}
 	});
-	value.globalAlpha = 1;
+	context.globalAlpha = 1;
 	paintWordmark(
-		value,
+		context,
 		pictureFooter.edge,
 		pictureFooter.baseline,
 		pictureTitleSize,
-		value3.display,
-		value2,
+		fonts.display,
+		paperStyle,
 	);
-	value.font = `500 ${pictureCaptionSize}px ${value3.sans}`;
-	value.fillStyle = value2.type;
-	value.globalAlpha = 0.9;
-	value.textAlign = `right`;
-	value.fillText(
-		argument3,
+	context.font = `500 ${pictureCaptionSize}px ${fonts.sans}`;
+	context.fillStyle = paperStyle.type;
+	context.globalAlpha = 0.9;
+	context.textAlign = `right`;
+	context.fillText(
+		name,
 		pictureSize - pictureFooter.edge,
 		pictureFooter.baseline,
 	);
-	value.globalAlpha = 1;
+	context.globalAlpha = 1;
 }
-function pictureBlob(argument, argument2) {
-	let value = document.createElement(`canvas`);
-	value.width = value.height = pictureSize;
-	paintPicture(value, argument);
-	return new Promise((argument3, argument4) =>
-		value.toBlob(
-			(argument5) =>
-				argument5
-					? argument3(
-							new File([argument5], argument2, {
+function pictureBlob(picture, fileName) {
+	let canvas = document.createElement(`canvas`);
+	canvas.width = canvas.height = pictureSize;
+	paintPicture(canvas, picture);
+	return new Promise((resolve, reject) =>
+		canvas.toBlob(
+			(blob) =>
+				blob
+					? resolve(
+							new File([blob], fileName, {
 								type: `image/png`,
 							}),
 						)
-					: argument4(Error(`No picture`)),
+					: reject(Error(`No picture`)),
 			`image/png`,
 		),
 	);

@@ -1,46 +1,46 @@
 import * as React from "react";
 import { paintPicture } from "../../lib/picture.jsx";
 function PictureCanvas({
-	input: argument,
-	paper: argument2,
-	pixels: argument3,
-	label: argument4,
-	className: argument5,
+	input: pictureInput,
+	paper,
+	pixels,
+	label,
+	className,
 }) {
-	let value = React.useRef(null);
+	let canvasRef = React.useRef(null);
 	React.useEffect(() => {
-		let value2 = value.current;
-		let value3 = true;
-		let value4 = () =>
+		let canvasElement = canvasRef.current;
+		let isActive = true;
+		let paint = () =>
 			paintPicture(
-				value2,
-				argument2
+				canvasElement,
+				paper
 					? {
-							...argument,
+							...pictureInput,
 							style: {
-								...argument.style,
-								paper: argument2,
+								...pictureInput.style,
+								paper: paper,
 							},
 						}
-					: argument,
+					: pictureInput,
 			);
-		value4();
+		paint();
 		if (document.fonts.status === `loading`) {
-			document.fonts.ready.then(() => value3 && value4());
+			document.fonts.ready.then(() => isActive && paint());
 		}
 		return () => {
-			value3 = false;
+			isActive = false;
 		};
-	}, [argument, argument2]);
+	}, [pictureInput, paper]);
 	return (
 		<canvas
-			ref={value}
-			width={argument3}
-			height={argument3}
-			role={argument4 ? `img` : undefined}
-			aria-label={argument4}
-			aria-hidden={!argument4 || undefined}
-			className={argument5}
+			ref={canvasRef}
+			width={pixels}
+			height={pixels}
+			role={label ? `img` : undefined}
+			aria-label={label}
+			aria-hidden={!label || undefined}
+			className={className}
 		/>
 	);
 }

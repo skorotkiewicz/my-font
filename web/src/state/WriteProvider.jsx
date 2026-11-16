@@ -11,11 +11,11 @@ import { loadPictureStyle, savePictureStyle } from "../lib/storage.jsx";
 import { useProject } from "../hooks/useProject.jsx";
 var WriteContext = React.createContext(null);
 function useWrite() {
-	let value = React.use(WriteContext);
-	if (!value) {
+	let context = React.use(WriteContext);
+	if (!context) {
 		throw Error(`useWrite must be used inside <WriteProvider>`);
 	}
-	return value;
+	return context;
 }
 var emptyProject = {
 	schemaVersion: 1,
@@ -30,19 +30,22 @@ var emptyProject = {
 	},
 };
 var fontBuildDelay = 300;
-var strokesFor = (project, argument) =>
-	project.glyphs[argument]?.drawings[0]?.strokes ?? [];
-var firstUnwritten = (argument) =>
-	allCodepoints.find((argument2) => !strokesFor(argument, argument2).length) ??
-	allCodepoints[0];
+var strokesFor = (project, glyphCodepoint) =>
+	project.glyphs[glyphCodepoint]?.drawings[0]?.strokes ?? [];
+var firstUnwritten = (sourceProject) =>
+	allCodepoints.find(
+		(candidateCodepoint) =>
+			!strokesFor(sourceProject, candidateCodepoint).length,
+	) ?? allCodepoints[0];
 function WriteProvider({ children }) {
 	let [codepoint, setCodepoint] = React.useState(allCodepoints[0]);
 	let [arrival, setArrival] = React.useState({
 		from: undefined,
 		by: `jump`,
 	});
-	let { project, setProject, status } = useProject(emptyProject, (argument) =>
-		setCodepoint(firstUnwritten(argument)),
+	let { project, setProject, status } = useProject(
+		emptyProject,
+		(loadedProject) => setCodepoint(firstUnwritten(loadedProject)),
 	);
 	let [history, setHistory] = React.useState({});
 	let [font, setFont] = React.useState();
@@ -52,12 +55,12 @@ function WriteProvider({ children }) {
 	let [picture, setPicture] = React.useState(defaultPictureStyle);
 	let fileInput = React.useRef(null);
 	React.useEffect(() => {
-		let value = true;
+		let active = true;
 		loadPictureStyle().then(
-			(argument) => value && argument && setPicture(argument),
+			(storedStyle) => active && storedStyle && setPicture(storedStyle),
 		);
 		return () => {
-			value = false;
+			active = false;
 		};
 	}, []);
 	let alignment = React.useMemo(() => alignProject(project), [project]);
@@ -65,7 +68,8 @@ function WriteProvider({ children }) {
 		() =>
 			new Set(
 				allCodepoints.filter(
-					(argument) => strokesFor(project, argument).length,
+					(candidateCodepoint) =>
+						strokesFor(project, candidateCodepoint).length,
 				),
 			),
 		[project],
@@ -75,33 +79,35 @@ function WriteProvider({ children }) {
 	let nextCodepoint = allCodepoints[glyphIndex + 1];
 	let strokes = strokesFor(project, codepoint);
 	let undoHistory = history[codepoint] ?? [];
-	let neighbourFor = (argument) =>
-		argument === undefined
+	let neighbourFor = (neighbourCodepoint) =>
+		neighbourCodepoint === undefined
 			? undefined
 			: {
-					strokes: strokesFor(project, argument),
-					place: alignment.place.get(argument),
+					strokes: strokesFor(project, neighbourCodepoint),
+					place: alignment.place.get(neighbourCodepoint),
 				};
 	let neighbours = {
 		before: neighbourFor(
 			allCodepoints
 				.slice(0, glyphIndex)
-				.findLast((argument) => drawn.has(argument)),
+				.findLast((candidateCodepoint) => drawn.has(candidateCodepoint)),
 		),
 		after: neighbourFor(
 			allCodepoints
 				.slice(glyphIndex + 1)
-				.find((argument) => drawn.has(argument)),
+				.find((candidateCodepoint) => drawn.has(candidateCodepoint)),
 		),
 	};
-	let replaceStrokes = (argument) =>
+	let replaceStrokes = (nextStrokes) =>
 		setProject((project2) => {
-			let value = project2.glyphs[codepoint]?.drawings[0];
-			let value2 = value?.strokes.length ? value.fix : defaultFix;
-			let value3 = {
-				id: value?.id ?? createId(),
-				strokes: argument,
-				fix: value2,
+			let currentDrawing = project2.glyphs[codepoint]?.drawings[0];
+			let drawingFix = currentDrawing?.strokes.length
+				? currentDrawing.fix
+				: defaultFix;
+			let nextDrawing = {
+				id: currentDrawing?.id ?? createId(),
+				strokes: nextStrokes,
+				fix: drawingFix,
 				updatedAt: Date.now(),
 			};
 			return {
@@ -111,98 +117,98 @@ function WriteProvider({ children }) {
 					...project2.glyphs,
 					[codepoint]: {
 						cp: codepoint,
-						drawings: [value3],
+						drawings: [nextDrawing],
 					},
 				},
 			};
 		});
-	let recordStrokes = (argument) => {
-		setHistory((argument2) => ({
-			...argument2,
-			[codepoint]: [...(argument2[codepoint] ?? []), strokes],
+	let recordStrokes = (nextStrokes) => {
+		setHistory((currentHistory) => ({
+			...currentHistory,
+			[codepoint]: [...(currentHistory[codepoint] ?? []), strokes],
 		}));
-		replaceStrokes(argument);
+		replaceStrokes(nextStrokes);
 	};
-	let replaceProject = (argument) => {
-		setProject(ensureProjectId(argument));
+	let replaceProject = (nextProject) => {
+		setProject(ensureProjectId(nextProject));
 		setHistory({});
-		setCodepoint(firstUnwritten(argument));
+		setCodepoint(firstUnwritten(nextProject));
 		setPicked(undefined);
 		setSheet(undefined);
 	};
-	let openFont = async (argument) => {
+	let openFont = async (fontFile) => {
 		if (status === `loading`) {
 			return;
 		}
-		let value =
-			argument.size > 16777216
+		let importResult =
+			fontFile.size > 16777216
 				? {
 						ok: false,
 						reason: `not-font`,
 					}
-				: await argument.arrayBuffer().then(readProjectFont, () => ({
+				: await fontFile.arrayBuffer().then(readProjectFont, () => ({
 						ok: false,
 						reason: `unreadable`,
 					}));
-		if (value.ok) {
+		if (importResult.ok) {
 			if (drawn.size) {
 				setOpening({
 					kind: `replace`,
-					fileName: argument.name,
-					project: value.project,
-					exportedAt: value.exportedAt,
+					fileName: fontFile.name,
+					project: importResult.project,
+					exportedAt: importResult.exportedAt,
 					device: project,
 				});
 				setSheet(`replace`);
 			} else {
-				replaceProject(value.project);
+				replaceProject(importResult.project);
 			}
 		} else {
 			setOpening({
 				kind: `refused`,
-				fileName: argument.name,
-				size: argument.size,
-				reason: value.reason,
+				fileName: fontFile.name,
+				size: fontFile.size,
+				reason: importResult.reason,
 			});
 			setSheet(`refused`);
 		}
 	};
 	let actions = {
-		go: (argument, argument2 = `press`) => {
-			if (argument !== undefined && argument !== codepoint) {
+		go: (targetCodepoint, arrivalMethod = `press`) => {
+			if (targetCodepoint !== undefined && targetCodepoint !== codepoint) {
 				setArrival({
 					from: codepoint,
-					by: argument2,
+					by: arrivalMethod,
 				});
-				setCodepoint(argument);
+				setCodepoint(targetCodepoint);
 			}
 		},
-		addStroke: (argument) => recordStrokes([...strokes, argument]),
+		addStroke: (stroke) => recordStrokes([...strokes, stroke]),
 		undo: () => {
 			if (undoHistory.length) {
-				setHistory((argument) => ({
-					...argument,
+				setHistory((currentHistory) => ({
+					...currentHistory,
 					[codepoint]: undoHistory.slice(0, -1),
 				}));
 				replaceStrokes(undoHistory[undoHistory.length - 1]);
 			}
 		},
 		clear: () => strokes.length && recordStrokes([]),
-		setFix: (argument, argument2) =>
+		setFix: (glyphCodepoint, nextFix) =>
 			setProject((project2) => {
-				let value = project2.glyphs[argument]?.drawings[0];
-				if (value) {
+				let currentDrawing = project2.glyphs[glyphCodepoint]?.drawings[0];
+				if (currentDrawing) {
 					return {
 						...project2,
 						updatedAt: Date.now(),
 						glyphs: {
 							...project2.glyphs,
-							[argument]: {
-								cp: argument,
+							[glyphCodepoint]: {
+								cp: glyphCodepoint,
 								drawings: [
 									{
-										...value,
-										fix: argument2,
+										...currentDrawing,
+										fix: nextFix,
 									},
 								],
 							},
@@ -212,36 +218,36 @@ function WriteProvider({ children }) {
 					return project2;
 				}
 			}),
-		setTidy: (argument) =>
-			setProject((argument2) => ({
-				...argument2,
+		setTidy: (tidy) =>
+			setProject((currentProject) => ({
+				...currentProject,
 				updatedAt: Date.now(),
 				settings: {
-					...argument2.settings,
-					tidy: argument,
+					...currentProject.settings,
+					tidy: tidy,
 				},
 			})),
-		rename: (argument) =>
-			setProject((argument2) =>
-				argument2.name === argument
-					? argument2
+		rename: (name) =>
+			setProject((currentProject) =>
+				currentProject.name === name
+					? currentProject
 					: {
-							...argument2,
+							...currentProject,
 							updatedAt: Date.now(),
-							name: argument,
+							name: name,
 						},
 			),
-		stylePicture: (argument) => {
-			let value = {
+		stylePicture: (stylePatch) => {
+			let nextPicture = {
 				...picture,
-				...argument,
+				...stylePatch,
 			};
-			setPicture(value);
-			savePictureStyle(value);
+			setPicture(nextPicture);
+			savePictureStyle(nextPicture);
 		},
 		startOver: () => {
-			setProject((argument) => ({
-				...argument,
+			setProject((currentProject) => ({
+				...currentProject,
 				id: createId(),
 				updatedAt: Date.now(),
 				glyphs: {},
@@ -251,16 +257,16 @@ function WriteProvider({ children }) {
 			setPicked(undefined);
 			setSheet(undefined);
 		},
-		openSheet: (argument) => {
-			if (argument === `adjust` && drawn.has(codepoint)) {
+		openSheet: (sheetName) => {
+			if (sheetName === `adjust` && drawn.has(codepoint)) {
 				setPicked(codepoint);
 			}
-			setSheet(argument);
+			setSheet(sheetName);
 		},
 		closeSheet: () => setSheet(undefined),
 		pick: setPicked,
 		chooseFont: () => fileInput.current?.click(),
-		openFont: (argument) => void openFont(argument),
+		openFont: (fontFile) => void openFont(fontFile),
 		replace: () =>
 			opening?.kind === `replace` && replaceProject(opening.project),
 	};
@@ -288,26 +294,26 @@ function WriteProvider({ children }) {
 		}
 	});
 	React.useEffect(() => {
-		let value = (argument) => onKeyDown(argument);
-		window.addEventListener(`keydown`, value);
-		return () => window.removeEventListener(`keydown`, value);
+		let handleKeyDown = (keyEvent) => onKeyDown(keyEvent);
+		window.addEventListener(`keydown`, handleKeyDown);
+		return () => window.removeEventListener(`keydown`, handleKeyDown);
 	}, []);
 	React.useEffect(() => {
-		let value = true;
-		let value2 = setTimeout(async () => {
-			let { buffer: value3 } = await buildProjectFont(project, alignment);
-			let value4 = await loadLiveFont(value3.slice(0));
-			if (value) {
+		let active = true;
+		let buildTimer = setTimeout(async () => {
+			let { buffer: fontBuffer } = await buildProjectFont(project, alignment);
+			let fontFamily = await loadLiveFont(fontBuffer.slice(0));
+			if (active) {
 				setFont({
-					otf: value3,
-					family: value4,
+					otf: fontBuffer,
+					family: fontFamily,
 					of: project,
 				});
 			}
 		}, fontBuildDelay);
 		return () => {
-			value = false;
-			clearTimeout(value2);
+			active = false;
+			clearTimeout(buildTimer);
 		};
 	}, [project, alignment]);
 	let state = {
@@ -345,10 +351,10 @@ function WriteProvider({ children }) {
 				tabIndex={-1}
 				aria-hidden={true}
 				onChange={(event) => {
-					let value = event.currentTarget.files?.[0];
+					let selectedFile = event.currentTarget.files?.[0];
 					event.currentTarget.value = ``;
-					if (value) {
-						actions.openFont(value);
+					if (selectedFile) {
+						actions.openFont(selectedFile);
 					}
 				}}
 			/>

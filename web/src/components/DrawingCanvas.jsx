@@ -5,29 +5,29 @@ import { createId } from "../lib/project.jsx";
 import { polygonsPath, strokePath } from "../lib/svgPaths.jsx";
 var hasUsedPen = false;
 var isIOS = typeof navigator < `u` && /iPad|iPhone/.test(navigator.userAgent);
-var hasPenPressure = ({ pointerType: argument, pressure: argument2 }) =>
-	(argument === `pen` && argument2 !== 0) ||
-	(argument2 > 0 && argument2 < 0.5) ||
-	(argument2 > 0.5 && argument2 < 1);
-var roundPrecision = (argument, argument2) =>
-	Math.round(argument * 10 ** argument2) / 10 ** argument2;
+var hasPenPressure = ({ pointerType, pressure }) =>
+	(pointerType === `pen` && pressure !== 0) ||
+	(pressure > 0 && pressure < 0.5) ||
+	(pressure > 0.5 && pressure < 1);
+var roundPrecision = (number, decimalPlaces) =>
+	Math.round(number * 10 ** decimalPlaces) / 10 ** decimalPlaces;
 function DrawingCanvas({ strokes, onStroke, label, className, children }) {
 	let canvas = React.useRef(null);
 	let livePath = React.useRef(null);
 	let activeStroke = React.useRef(null);
 	let animationFrame = React.useRef(0);
 	React.useEffect(() => {
-		let value = canvas.current;
-		let value2 = (event) => event.preventDefault();
-		value.addEventListener(`touchstart`, value2, {
+		let canvasElement = canvas.current;
+		let preventTouchDefault = (event) => event.preventDefault();
+		canvasElement.addEventListener(`touchstart`, preventTouchDefault, {
 			passive: false,
 		});
-		value.addEventListener(`touchmove`, value2, {
+		canvasElement.addEventListener(`touchmove`, preventTouchDefault, {
 			passive: false,
 		});
 		return () => {
-			value.removeEventListener(`touchstart`, value2);
-			value.removeEventListener(`touchmove`, value2);
+			canvasElement.removeEventListener(`touchstart`, preventTouchDefault);
+			canvasElement.removeEventListener(`touchmove`, preventTouchDefault);
 			cancelAnimationFrame(animationFrame.current);
 		};
 	}, []);
@@ -50,35 +50,27 @@ function DrawingCanvas({ strokes, onStroke, label, className, children }) {
 		animationFrame.current = 0;
 		livePath.current?.setAttribute(`d`, ``);
 	};
-	let eventPoint = (event, { rect: argument, input: argument2 }) => [
-		roundPrecision(
-			((event.clientX - argument.left) / argument.width) * stageWidth,
-			1,
-		),
-		roundPrecision(
-			((event.clientY - argument.top) / argument.height) * stageHeight,
-			1,
-		),
-		argument2 === `pen` ? roundPrecision(event.pressure, 2) : 0.5,
+	let eventPoint = (event, { rect, input }) => [
+		roundPrecision(((event.clientX - rect.left) / rect.width) * stageWidth, 1),
+		roundPrecision(((event.clientY - rect.top) / rect.height) * stageHeight, 1),
+		input === `pen` ? roundPrecision(event.pressure, 2) : 0.5,
 	];
-	let appendPoint = (stroke, argument) => {
-		let value = stroke.pts[stroke.pts.length - 1];
+	let appendPoint = (stroke, point) => {
+		let lastPoint = stroke.pts[stroke.pts.length - 1];
 		if (
 			stroke.input === `pen` &&
 			stroke.pts.length > 1 &&
-			Math.hypot(
-				argument[0] - stroke.anchor[0],
-				argument[1] - stroke.anchor[1],
-			) < stroke.px
+			Math.hypot(point[0] - stroke.anchor[0], point[1] - stroke.anchor[1]) <
+				stroke.px
 		) {
 			stroke.pts[stroke.pts.length - 1] = [
-				argument[0],
-				argument[1],
-				Math.max(value[2], argument[2]),
+				point[0],
+				point[1],
+				Math.max(lastPoint[2], point[2]),
 			];
-		} else if (argument[0] !== value[0] || argument[1] !== value[1]) {
-			stroke.pts.push(argument);
-			stroke.anchor = argument;
+		} else if (point[0] !== lastPoint[0] || point[1] !== lastPoint[1]) {
+			stroke.pts.push(point);
+			stroke.anchor = point;
 		}
 	};
 	return (
@@ -87,8 +79,8 @@ function DrawingCanvas({ strokes, onStroke, label, className, children }) {
 			viewBox={`0 0 ${stageWidth} ${stageHeight}`}
 			className={`block aspect-2/1 w-full touch-none select-none [-webkit-touch-callout:none] ${className ?? ``}`}
 			onPointerDown={(event) => {
-				let value = event.pointerType === `pen`;
-				if (value) {
+				let isPen = event.pointerType === `pen`;
+				if (isPen) {
 					hasUsedPen = true;
 				}
 				if (
@@ -98,31 +90,31 @@ function DrawingCanvas({ strokes, onStroke, label, className, children }) {
 					return;
 				}
 				if (activeStroke.current) {
-					if (!value || activeStroke.current.pointerType === `pen`) {
+					if (!isPen || activeStroke.current.pointerType === `pen`) {
 						return;
 					}
 					cancelStroke();
 				}
 				event.currentTarget.setPointerCapture(event.pointerId);
-				let value2 = event.currentTarget.getBoundingClientRect();
-				let value3 = hasPenPressure(event.nativeEvent)
+				let canvasRect = event.currentTarget.getBoundingClientRect();
+				let strokeInput = hasPenPressure(event.nativeEvent)
 					? `pen`
 					: event.pointerType === `touch`
 						? `touch`
 						: `mouse`;
-				let value4 = eventPoint(event.nativeEvent, {
-					rect: value2,
-					input: value3,
+				let firstPoint = eventPoint(event.nativeEvent, {
+					rect: canvasRect,
+					input: strokeInput,
 				});
-				let { pointerId: value5, pointerType: value6 } = event;
+				let { pointerId, pointerType } = event;
 				activeStroke.current = {
-					pointerId: value5,
-					pointerType: value6,
-					input: value3,
-					rect: value2,
-					px: stageWidth / value2.width,
-					pts: [value4],
-					anchor: value4,
+					pointerId: pointerId,
+					pointerType: pointerType,
+					input: strokeInput,
+					rect: canvasRect,
+					px: stageWidth / canvasRect.width,
+					pts: [firstPoint],
+					anchor: firstPoint,
 				};
 				schedulePaint();
 			}}
@@ -131,11 +123,13 @@ function DrawingCanvas({ strokes, onStroke, label, className, children }) {
 				if (!event2 || event.pointerId !== event2.pointerId) {
 					return;
 				}
-				let value = isIOS
+				let coalescedEvents = isIOS
 					? []
 					: (event.nativeEvent.getCoalescedEvents?.() ?? []);
-				for (let value2 of value.length ? value : [event.nativeEvent]) {
-					appendPoint(event2, eventPoint(value2, event2));
+				for (let pointerEvent of coalescedEvents.length
+					? coalescedEvents
+					: [event.nativeEvent]) {
+					appendPoint(event2, eventPoint(pointerEvent, event2));
 				}
 				schedulePaint();
 			}}
@@ -161,8 +155,8 @@ function DrawingCanvas({ strokes, onStroke, label, className, children }) {
 		>
 			{children}
 			<g className="fill-hand">
-				{strokes.map((argument) => (
-					<path d={strokePath(argument)} key={argument.id} />
+				{strokes.map((stroke) => (
+					<path d={strokePath(stroke)} key={stroke.id} />
 				))}
 				<path ref={livePath} />
 			</g>

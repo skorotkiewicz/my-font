@@ -1,78 +1,78 @@
 import { useWrite } from "../state/WriteProvider.jsx";
 var placeholderXHeight = 526;
 var placeholderCapHeight = 686;
-function placeholderScale(argument, argument2) {
-	if (argument >= `a` && argument <= `z`) {
-		return argument2.xHeight / placeholderXHeight;
-	} else if (argument >= `0` && argument <= `9`) {
-		return argument2.digitHeight / placeholderCapHeight;
+function placeholderScale(character, lines) {
+	if (character >= `a` && character <= `z`) {
+		return lines.xHeight / placeholderXHeight;
+	} else if (character >= `0` && character <= `9`) {
+		return lines.digitHeight / placeholderCapHeight;
 	} else {
-		return argument2.capHeight / placeholderCapHeight;
+		return lines.capHeight / placeholderCapHeight;
 	}
 }
-function textRuns(argument, argument2, argument3, argument4 = 1) {
-	let value = [];
-	for (let value2 of argument) {
-		let value3 = value2 === ` ` || argument2(value2);
-		let value4 = value3 ? 1 : placeholderScale(value2, argument3) * argument4;
-		let value5 = value[value.length - 1];
-		if (value5 && value5.hand === value3 && value5.scale === value4) {
-			value5.text += value2;
+function textRuns(text, hasDrawing, lines, shrink = 1) {
+	let runs = [];
+	for (let character of text) {
+		let isHandwritten = character === ` ` || hasDrawing(character);
+		let scale = isHandwritten ? 1 : placeholderScale(character, lines) * shrink;
+		let previousRun = runs[runs.length - 1];
+		if (
+			previousRun &&
+			previousRun.hand === isHandwritten &&
+			previousRun.scale === scale
+		) {
+			previousRun.text += character;
 		} else {
-			value.push({
-				text: value2,
-				hand: value3,
-				scale: value4,
+			runs.push({
+				text: character,
+				hand: isHandwritten,
+				scale: scale,
 			});
 		}
 	}
-	return value;
+	return runs;
 }
 function useTextStyle() {
-	let { state: value } = useWrite();
-	if (value.font) {
-		return `"${value.font.family}", var(--font-display)`;
+	let { state } = useWrite();
+	if (state.font) {
+		return `"${state.font.family}", var(--font-display)`;
 	} else {
 		return `var(--font-display)`;
 	}
 }
-function LiveText({
-	text: argument,
-	className: argument2,
-	shrink: argument3 = 1,
-}) {
-	let { state: value } = useWrite();
-	let value2 = useTextStyle();
-	let value3 = textRuns(
-		argument,
-		(argument4) => value.drawn.has(argument4.charCodeAt(0)),
-		value.alignment.lines,
-		argument3,
+function LiveText({ text, className, shrink = 1 }) {
+	let { state } = useWrite();
+	let fontFamily = useTextStyle();
+	let runs = textRuns(
+		text,
+		(character) => state.drawn.has(character.charCodeAt(0)),
+		state.alignment.lines,
+		shrink,
 	);
 	return (
-		<span className={argument2}>
-			<span className="sr-only">{argument}</span>
+		<span className={className}>
+			<span className="sr-only">{text}</span>
 			<span aria-hidden={true}>
-				{value3.map((argument4, argument5) =>
-					argument4.hand ? (
+				{runs.map((run, runIndex) =>
+					run.hand ? (
 						<span
 							className="text-hand"
 							style={{
-								fontFamily: value2,
+								fontFamily: fontFamily,
 							}}
-							key={argument5}
+							key={runIndex}
 						>
-							{argument4.text}
+							{run.text}
 						</span>
 					) : (
 						<span
 							className="font-display font-normal text-placeholder"
 							style={{
-								fontSize: `${argument4.scale.toFixed(3)}em`,
+								fontSize: `${run.scale.toFixed(3)}em`,
 							}}
-							key={argument5}
+							key={runIndex}
 						>
-							{argument4.text}
+							{run.text}
 						</span>
 					),
 				)}

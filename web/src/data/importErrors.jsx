@@ -1,5 +1,5 @@
 import * as React from "react";
-var extensionFor = (argument) => argument.split(`.`).pop()?.toLowerCase() ?? ``;
+var extensionFor = (fileName) => fileName.split(`.`).pop()?.toLowerCase() ?? ``;
 var fileTypeLabels = {
 	pdf: `PDF document`,
 	png: `PNG image`,
@@ -29,8 +29,8 @@ var importErrors = {
 	},
 	website: {
 		title: `Open the OTF instead`,
-		message: ({ name: argument }) =>
-			`${extensionFor(argument) === `woff` ? `WOFF` : `WOFF2`} files stay small for websites, so they leave your strokes out. The OTF from the same download has them.`,
+		message: ({ name: fileName }) =>
+			`${extensionFor(fileName) === `woff` ? `WOFF` : `WOFF2`} files stay small for websites, so they leave your strokes out. The OTF from the same download has them.`,
 		about: () => `Website font`,
 		action: `Choose the OTF`,
 	},
@@ -57,19 +57,19 @@ var importErrors = {
 	},
 	"not-font": {
 		title: `That’s not a font`,
-		message: ({ expected: argument }) => (
+		message: ({ expected: expectedFileName }) => (
 			<React.Fragment>
 				{`Choose the OTF you downloaded from Export. It’s named like `}
 				<span className="cursor-text wrap-anywhere select-text">
-					{argument}
+					{expectedFileName}
 				</span>
 				{`.`}
 			</React.Fragment>
 		),
-		about: ({ name: argument, size: argument2 }) =>
-			argument2 > 16777216
-				? `${Math.round(argument2 / 1024 / 1024)} MB, too large to be a font`
-				: (fileTypeLabels[extensionFor(argument)] ?? `Not a font file`),
+		about: ({ name: fileName, size: fileSize }) =>
+			fileSize > 16777216
+				? `${Math.round(fileSize / 1024 / 1024)} MB, too large to be a font`
+				: (fileTypeLabels[extensionFor(fileName)] ?? `Not a font file`),
 		action: `Choose a font`,
 	},
 };

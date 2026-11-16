@@ -27,48 +27,51 @@ var downloadButtonStyles = {
 	},
 };
 function FontDownloadButton({
-	kind: argument,
-	buffer: argument2,
-	done: argument3,
-	onDownload: argument4,
+	kind: format,
+	buffer,
+	done: isDone,
+	onDownload,
 }) {
-	let { label: value, use: value2 } = downloadFormats[argument];
-	let { surface: value3, small: value4 } = downloadButtonStyles[argument];
+	let { label: formatLabel, use: formatUse } = downloadFormats[format];
+	let { surface: surfaceClass, small: captionClass } =
+		downloadButtonStyles[format];
 	return (
 		<button
 			type="button"
-			onClick={argument4}
-			disabled={!argument2}
-			className={`pressable flex h-16 items-center gap-3.5 rounded-[1.25rem] px-4.5 text-left disabled:opacity-60 ${value3}`}
+			onClick={onDownload}
+			disabled={!buffer}
+			className={`pressable flex h-16 items-center gap-3.5 rounded-[1.25rem] px-4.5 text-left disabled:opacity-60 ${surfaceClass}`}
 		>
 			<span
-				className={argument3 ? `icon-in flex shrink-0` : `flex shrink-0`}
-				key={String(argument3)}
+				className={isDone ? `icon-in flex shrink-0` : `flex shrink-0`}
+				key={String(isDone)}
 			>
-				{argument3 ? <CheckIcon /> : <DownloadIcon />}
+				{isDone ? <CheckIcon /> : <DownloadIcon />}
 			</span>
 			<span className="flex min-w-0 flex-1 flex-col gap-px">
-				<span className="text-base leading-5.5 font-semibold">{value}</span>
-				<span className={`truncate text-caption ${value4}`}>
-					{argument3 ? `Sent to your downloads` : value2}
+				<span className="text-base leading-5.5 font-semibold">
+					{formatLabel}
+				</span>
+				<span className={`truncate text-caption ${captionClass}`}>
+					{isDone ? `Sent to your downloads` : formatUse}
 				</span>
 			</span>
-			<span className={`text-caption tabular-nums ${value4}`}>
-				{argument2 ? formatBytes(argument2.byteLength) : `…`}
+			<span className={`text-caption tabular-nums ${captionClass}`}>
+				{buffer ? formatBytes(buffer.byteLength) : `…`}
 			</span>
 		</button>
 	);
 }
 function ProjectActions() {
-	let { state: value, actions: value2 } = useWrite();
-	let [value3, value4] = React.useState(false);
-	let value5 = React.useRef(null);
-	let value6 = () => {
-		(0, tp.flushSync)(() => value4(false));
-		value5.current?.focus();
+	let { state, actions } = useWrite();
+	let [isConfirmingErase, setIsConfirmingErase] = React.useState(false);
+	let startOverButtonRef = React.useRef(null);
+	let cancelErase = () => {
+		(0, tp.flushSync)(() => setIsConfirmingErase(false));
+		startOverButtonRef.current?.focus();
 	};
-	let value7 = value.drawn.size;
-	if (value3) {
+	let writtenCount = state.drawn.size;
+	if (isConfirmingErase) {
 		return (
 			<div
 				role="group"
@@ -81,58 +84,58 @@ function ProjectActions() {
 				>{`Can’t be undone`}</span>
 				<button
 					type="button"
-					onClick={value2.startOver}
+					onClick={actions.startOver}
 					className="pressable h-11 shrink-0 rounded-full bg-paper px-4 text-[0.9375rem] leading-5 font-semibold text-danger hover:bg-paper/92"
 				>
 					{`Erase all `}
-					{value7}
+					{writtenCount}
 				</button>
 				<OutlineButton
 					autoFocus={true}
-					onClick={value6}
+					onClick={cancelErase}
 				>{`Keep them`}</OutlineButton>
 			</div>
 		);
 	} else {
 		return (
 			<div className="flex items-center justify-between gap-2 px-5 pt-4 lg:px-6">
-				<OutlineButton onClick={value2.chooseFont} className="pl-3.5">
+				<OutlineButton onClick={actions.chooseFont} className="pl-3.5">
 					<FolderIcon className="size-5.5 shrink-0 lg:size-5" />
 					{`Open font…`}
 				</OutlineButton>
 				<OutlineButton
-					ref={value5}
-					onClick={() => value4(true)}
+					ref={startOverButtonRef}
+					onClick={() => setIsConfirmingErase(true)}
 				>{`Start over`}</OutlineButton>
 			</div>
 		);
 	}
 }
 function FontNameInput() {
-	let { state: value, actions: value2 } = useWrite();
-	let value3 = React.useId();
-	let { name: value4 } = value.project;
+	let { state, actions } = useWrite();
+	let descriptionId = React.useId();
+	let { name: fontName } = state.project;
 	return (
 		<label className="flex flex-col gap-2 px-5 pb-2 lg:px-6">
 			<span className="flex items-baseline justify-between gap-3 text-caption font-medium text-paper/90">
 				{`Font name`}
 				<span
-					id={value3}
+					id={descriptionId}
 					className="font-normal"
 				>{`How font menus will list it`}</span>
 			</span>
 			<input
 				type="text"
 				name="font-name"
-				value={value4}
-				onChange={(event) => value2.rename(event.target.value)}
-				onBlur={() => value2.rename(familyName(value4))}
+				value={fontName}
+				onChange={(event) => actions.rename(event.target.value)}
+				onBlur={() => actions.rename(familyName(fontName))}
 				onKeyDown={(event) =>
 					event.key === `Enter` && event.currentTarget.blur()
 				}
 				maxLength={31}
 				placeholder={defaultFamilyName}
-				aria-describedby={value3}
+				aria-describedby={descriptionId}
 				autoComplete="off"
 				autoCorrect="off"
 				autoCapitalize="words"
@@ -144,32 +147,32 @@ function FontNameInput() {
 	);
 }
 function PictureSummary({
-	input: argument,
-	picture: argument2,
-	focusStyle: argument3,
+	input: pictureInput,
+	picture: pictureDownload,
+	focusStyle,
 }) {
-	let { actions: value } = useWrite();
-	let value2 = React.useRef(null);
-	let value3 = () => value.openSheet(`picture`);
+	let { actions } = useWrite();
+	let styleButtonRef = React.useRef(null);
+	let openPictureStyle = () => actions.openSheet(`picture`);
 	React.useEffect(() => {
-		if (argument3) {
-			value2.current?.focus({
+		if (focusStyle) {
+			styleButtonRef.current?.focus({
 				preventScroll: true,
 			});
 		}
-	}, [argument3]);
+	}, [focusStyle]);
 	return (
 		<div className="flex gap-4 px-5 pb-5 lg:px-6">
 			<button
 				type="button"
-				onClick={value3}
+				onClick={openPictureStyle}
 				aria-label="Change the picture\u2019s colour and paper"
 				className="pressable size-28 shrink-0 rounded-2xl"
 			>
 				<PictureCanvas
-					input={argument}
+					input={pictureInput}
 					pixels={540}
-					className={`size-full rounded-[inherit] ${argument.style.paper === `carbon` ? `outline-1 -outline-offset-1 outline-paper/20` : ``}`}
+					className={`size-full rounded-[inherit] ${pictureInput.style.paper === `carbon` ? `outline-1 -outline-offset-1 outline-paper/20` : ``}`}
 				/>
 			</button>
 			<div className="flex min-w-0 flex-1 flex-col items-start justify-between gap-2 py-0.5">
@@ -179,36 +182,36 @@ function PictureSummary({
 						role="status"
 						className="text-caption text-pretty text-paper/90"
 					>
-						{argument2.sent
+						{pictureDownload.sent
 							? `Sent to your downloads`
 							: `What you typed, in your handwriting`}
 					</span>
 				</p>
 				<div className="flex flex-wrap gap-2">
 					<ToolButton
-						onClick={argument2.send}
-						disabled={argument2.empty}
+						onClick={pictureDownload.send}
+						disabled={pictureDownload.empty}
 						className="pl-3.5"
 					>
 						<span
 							className={
-								argument2.sent ? `icon-in flex shrink-0` : `flex shrink-0`
+								pictureDownload.sent ? `icon-in flex shrink-0` : `flex shrink-0`
 							}
-							key={String(argument2.sent)}
+							key={String(pictureDownload.sent)}
 						>
-							{argument2.sent ? (
+							{pictureDownload.sent ? (
 								<CheckIcon />
-							) : argument2.shares ? (
+							) : pictureDownload.shares ? (
 								<ShareIcon />
 							) : (
 								<DownloadIcon />
 							)}
 						</span>
-						{argument2.shares ? `Share` : `Save picture`}
+						{pictureDownload.shares ? `Share` : `Save picture`}
 					</ToolButton>
 					<OutlineButton
-						ref={value2}
-						onClick={value3}
+						ref={styleButtonRef}
+						onClick={openPictureStyle}
 						aria-haspopup="dialog"
 					>{`Style…`}</OutlineButton>
 				</div>
@@ -217,38 +220,38 @@ function PictureSummary({
 	);
 }
 function FontExportView({
-	text: argument,
-	onText: argument2,
-	input: argument3,
-	picture: argument4,
-	focusStyle: argument5,
+	text,
+	onText,
+	input: pictureInput,
+	picture: pictureDownload,
+	focusStyle,
 }) {
-	let { state: value } = useWrite();
-	let { project: value2 } = value;
-	let value3 = useTextStyle();
-	let [value4, value5] = React.useState();
-	let value6 = useFontDownloads(value2, value.alignment, value.font);
-	let value7 = React.useRef(false);
-	let value8 = async (argument6) => {
-		if (!value7.current) {
-			value7.current = true;
+	let { state } = useWrite();
+	let { project } = state;
+	let fontFamily = useTextStyle();
+	let [completedDownload, setCompletedDownload] = React.useState();
+	let fontDownloads = useFontDownloads(project, state.alignment, state.font);
+	let downloadInProgressRef = React.useRef(false);
+	let sendFont = async (format) => {
+		if (!downloadInProgressRef.current) {
+			downloadInProgressRef.current = true;
 			try {
 				downloadFont(
-					await value6.get(argument6),
-					fontFileName(value2.name, argument6),
-					argument6,
+					await fontDownloads.get(format),
+					fontFileName(project.name, format),
+					format,
 				);
-				value5({
-					kind: argument6,
-					of: value2,
+				setCompletedDownload({
+					kind: format,
+					of: project,
 				});
 			} finally {
-				value7.current = false;
+				downloadInProgressRef.current = false;
 			}
 		}
 	};
-	let value9 = (argument6) =>
-		value4?.kind === argument6 && value4.of === value2;
+	let isDownloaded = (format) =>
+		completedDownload?.kind === format && completedDownload.of === project;
 	return (
 		<div className="flex flex-col pb-1">
 			<label className="flex flex-col gap-2.5 pt-1 pb-3.5">
@@ -262,37 +265,37 @@ function FontExportView({
 				</span>
 				<span className="scroll-edges block bg-paper/6 [--edge-size:1.25rem] [--surface:var(--strip-surface)]">
 					<textarea
-						value={argument}
-						onChange={(event) => argument2(event.target.value)}
+						value={text}
+						onChange={(event) => onText(event.target.value)}
 						spellCheck={false}
 						autoCapitalize="none"
 						rows={3}
 						className="edge-scroller ruled block w-full resize-none bg-transparent px-5 py-1.5 text-[2.5rem] leading-[1.2] text-hand caret-paper -outline-offset-2 placeholder:text-paper/72 lg:px-6"
 						style={{
-							fontFamily: value3,
+							fontFamily: fontFamily,
 						}}
 						placeholder="Type something"
 					/>
 				</span>
 			</label>
 			<PictureSummary
-				input={argument3}
-				picture={argument4}
-				focusStyle={argument5}
+				input={pictureInput}
+				picture={pictureDownload}
+				focusStyle={focusStyle}
 			/>
 			<FontNameInput />
 			<div className="flex flex-col gap-2 px-5 lg:px-6">
 				<FontDownloadButton
 					kind="otf"
-					buffer={value6.otf}
-					done={value9(`otf`)}
-					onDownload={() => void value8(`otf`)}
+					buffer={fontDownloads.otf}
+					done={isDownloaded(`otf`)}
+					onDownload={() => void sendFont(`otf`)}
 				/>
 				<FontDownloadButton
 					kind="woff2"
-					buffer={value6.woff2}
-					done={value9(`woff2`)}
-					onDownload={() => void value8(`woff2`)}
+					buffer={fontDownloads.woff2}
+					done={isDownloaded(`woff2`)}
+					onDownload={() => void sendFont(`woff2`)}
 				/>
 			</div>
 			<p className="hidden px-5 pt-2.5 text-caption text-pretty text-paper/90 pointer-fine:block lg:px-6">{`To install your font, open the OTF and choose Install.`}</p>

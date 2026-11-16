@@ -1,34 +1,35 @@
 import { normalizeProject } from "./project.jsx";
 import { normalizePictureStyle } from "../data/pictureStyles.jsx";
-function idbRequest(argument) {
-	return new Promise((argument2, argument3) => {
-		argument.oncomplete = argument.onsuccess = () => argument2(argument.result);
-		argument.onabort = argument.onerror = () => argument3(argument.error);
+function idbRequest(request) {
+	return new Promise((resolve, reject) => {
+		request.oncomplete = request.onsuccess = () => resolve(request.result);
+		request.onabort = request.onerror = () => reject(request.error);
 	});
 }
-function createStore(argument, argument2) {
-	let value;
-	let value2 = () => {
-		if (value) {
-			return value;
+function createStore(databaseName, storeName) {
+	let databasePromise;
+	let openDatabase = () => {
+		if (databasePromise) {
+			return databasePromise;
 		}
-		let value3 = indexedDB.open(argument);
-		value3.onupgradeneeded = () => value3.result.createObjectStore(argument2);
-		value = idbRequest(value3);
-		value.then(
-			(argument3) => {
-				argument3.onclose = () => (value = undefined);
+		let openRequest = indexedDB.open(databaseName);
+		openRequest.onupgradeneeded = () =>
+			openRequest.result.createObjectStore(storeName);
+		databasePromise = idbRequest(openRequest);
+		databasePromise.then(
+			(database) => {
+				database.onclose = () => (databasePromise = undefined);
 			},
 			() => {
-				value = undefined;
+				databasePromise = undefined;
 			},
 		);
-		return value;
+		return databasePromise;
 	};
-	return (argument3, argument4) =>
-		value2().then((argument5) =>
-			argument4(
-				argument5.transaction(argument2, argument3).objectStore(argument2),
+	return (transactionMode, useObjectStore) =>
+		openDatabase().then((database) =>
+			useObjectStore(
+				database.transaction(storeName, transactionMode).objectStore(storeName),
 			),
 		);
 }
@@ -37,29 +38,27 @@ function getStore() {
 	defaultStore ||= createStore(`keyval-store`, `keyval`);
 	return defaultStore;
 }
-function readStored(argument, argument2 = getStore()) {
-	return argument2(`readonly`, (argument3) =>
-		idbRequest(argument3.get(argument)),
-	);
+function readStored(key, store = getStore()) {
+	return store(`readonly`, (objectStore) => idbRequest(objectStore.get(key)));
 }
-function writeStored(argument, argument2, argument3 = getStore()) {
-	return argument3(`readwrite`, (argument4) => {
-		argument4.put(argument2, argument);
-		return idbRequest(argument4.transaction);
+function writeStored(key, storedValue, store = getStore()) {
+	return store(`readwrite`, (objectStore) => {
+		objectStore.put(storedValue, key);
+		return idbRequest(objectStore.transaction);
 	});
 }
 var projectStorageKey = `project:spike-0000`;
 async function loadProject() {
-	let value = await readStored(projectStorageKey);
-	if (value === undefined) {
+	let storedProject = await readStored(projectStorageKey);
+	if (storedProject === undefined) {
 		return undefined;
 	} else {
-		return normalizeProject(value);
+		return normalizeProject(storedProject);
 	}
 }
 var persistRequested = false;
-async function saveProject(argument) {
-	await writeStored(projectStorageKey, argument);
+async function saveProject(project) {
+	await writeStored(projectStorageKey, project);
 	if (!persistRequested) {
 		persistRequested = true;
 		navigator.storage?.persist?.().catch(() => {});
@@ -68,12 +67,14 @@ async function saveProject(argument) {
 var pictureStorageKey = `picture-style`;
 var loadPictureStyle = () =>
 	readStored(pictureStorageKey).then(
-		(argument) =>
-			argument === undefined ? undefined : normalizePictureStyle(argument),
+		(storedStyle) =>
+			storedStyle === undefined
+				? undefined
+				: normalizePictureStyle(storedStyle),
 		() => undefined,
 	);
-var savePictureStyle = (argument) =>
-	writeStored(pictureStorageKey, argument).catch(() => undefined);
+var savePictureStyle = (style) =>
+	writeStored(pictureStorageKey, style).catch(() => undefined);
 var saveDelay = 400;
 export {
 	loadProject,

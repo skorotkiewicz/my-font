@@ -5,22 +5,22 @@ function useFileDrop(onDrop) {
 	let [dragging, setDragging] = React.useState(false);
 	let handleFile = React.useEffectEvent(onDrop);
 	React.useEffect(() => {
-		let value = 0;
-		let value2 = (event) => {
+		let dragDepth = 0;
+		let handleDragEnter = (event) => {
 			if (isFileDrag(event)) {
 				event.preventDefault();
-				if (value++ === 0) {
+				if (dragDepth++ === 0) {
 					setDragging(true);
 				}
 			}
 		};
-		let value3 = (argument) => {
-			if (isFileDrag(argument) && --value <= 0) {
-				value = 0;
+		let handleDragLeave = (event) => {
+			if (isFileDrag(event) && --dragDepth <= 0) {
+				dragDepth = 0;
 				setDragging(false);
 			}
 		};
-		let value4 = (event) => {
+		let handleDragOver = (event) => {
 			if (isFileDrag(event)) {
 				event.preventDefault();
 				if (event.dataTransfer) {
@@ -28,27 +28,27 @@ function useFileDrop(onDrop) {
 				}
 			}
 		};
-		let value5 = (event) => {
+		let handleDrop = (event) => {
 			if (!isFileDrag(event)) {
 				return;
 			}
 			event.preventDefault();
-			value = 0;
+			dragDepth = 0;
 			setDragging(false);
-			let value6 = event.dataTransfer?.files[0];
-			if (value6) {
-				handleFile(value6);
+			let droppedFile = event.dataTransfer?.files[0];
+			if (droppedFile) {
+				handleFile(droppedFile);
 			}
 		};
-		window.addEventListener(`dragenter`, value2);
-		window.addEventListener(`dragleave`, value3);
-		window.addEventListener(`dragover`, value4);
-		window.addEventListener(`drop`, value5);
+		window.addEventListener(`dragenter`, handleDragEnter);
+		window.addEventListener(`dragleave`, handleDragLeave);
+		window.addEventListener(`dragover`, handleDragOver);
+		window.addEventListener(`drop`, handleDrop);
 		return () => {
-			window.removeEventListener(`dragenter`, value2);
-			window.removeEventListener(`dragleave`, value3);
-			window.removeEventListener(`dragover`, value4);
-			window.removeEventListener(`drop`, value5);
+			window.removeEventListener(`dragenter`, handleDragEnter);
+			window.removeEventListener(`dragleave`, handleDragLeave);
+			window.removeEventListener(`dragover`, handleDragOver);
+			window.removeEventListener(`drop`, handleDrop);
 		};
 	}, []);
 	return dragging;

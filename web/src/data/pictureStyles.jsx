@@ -71,17 +71,17 @@ var defaultPictureStyle = {
 	paper: `carbon`,
 	ruling: `lines`,
 };
-var paperStyleFor = (argument) =>
-	paperStyles.find((argument2) => argument2.id === argument) ?? paperStyles[0];
-function normalizePictureStyle(argument) {
-	let { paper: value, ruling: value2 } =
-		typeof argument == `object` && argument ? argument : {};
+var paperStyleFor = (paperId) =>
+	paperStyles.find((paperStyle) => paperStyle.id === paperId) ?? paperStyles[0];
+function normalizePictureStyle(style) {
+	let { paper: paperId, ruling: rulingId } =
+		typeof style == `object` && style ? style : {};
 	return {
 		paper:
-			paperStyles.find((argument2) => argument2.id === value)?.id ??
+			paperStyles.find((paperStyle) => paperStyle.id === paperId)?.id ??
 			defaultPictureStyle.paper,
 		ruling:
-			rulingStyles.find((argument2) => argument2.id === value2)?.id ??
+			rulingStyles.find((rulingStyle) => rulingStyle.id === rulingId)?.id ??
 			defaultPictureStyle.ruling,
 	};
 }

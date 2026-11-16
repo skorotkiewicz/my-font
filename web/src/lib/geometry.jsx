@@ -1,31 +1,31 @@
 function signedArea(polygon) {
 	let area = 0;
 	for (
-		let value = 0, value2 = polygon.length - 1;
-		value < polygon.length;
-		value2 = value++
+		let vertexIndex = 0, previousVertexIndex = polygon.length - 1;
+		vertexIndex < polygon.length;
+		previousVertexIndex = vertexIndex++
 	) {
 		area +=
-			(polygon[value2][0] - polygon[value][0]) *
-			(polygon[value2][1] + polygon[value][1]);
+			(polygon[previousVertexIndex][0] - polygon[vertexIndex][0]) *
+			(polygon[previousVertexIndex][1] + polygon[vertexIndex][1]);
 	}
 	return area / 2;
 }
 function polygonBounds(polygons) {
 	let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity];
-	for (let value of polygons) {
-		for (let [value2, value3] of value) {
-			if (value2 < minX) {
-				minX = value2;
+	for (let polygon of polygons) {
+		for (let [pointX, pointY] of polygon) {
+			if (pointX < minX) {
+				minX = pointX;
 			}
-			if (value3 < minY) {
-				minY = value3;
+			if (pointY < minY) {
+				minY = pointY;
 			}
-			if (value2 > maxX) {
-				maxX = value2;
+			if (pointX > maxX) {
+				maxX = pointX;
 			}
-			if (value3 > maxY) {
-				maxY = value3;
+			if (pointY > maxY) {
+				maxY = pointY;
 			}
 		}
 	}
@@ -40,10 +40,12 @@ function polygonBounds(polygons) {
 		};
 	}
 }
-var clamp = (argument, argument2, argument3) =>
-	Math.min(argument3, Math.max(argument2, argument));
+var clamp = (number, lowerBound, upperBound) =>
+	Math.min(upperBound, Math.max(lowerBound, number));
 function median(numbers) {
-	let sorted = numbers.toSorted((argument, argument2) => argument - argument2);
+	let sorted = numbers.toSorted(
+		(leftNumber, rightNumber) => leftNumber - rightNumber,
+	);
 	let middle = sorted.length >> 1;
 	if (sorted.length % 2) {
 		return sorted[middle];

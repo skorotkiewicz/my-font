@@ -1,30 +1,32 @@
 import { signedArea } from "./geometry.jsx";
 import { polygonsForStroke } from "./strokes.jsx";
-var roundTenth = (argument) => Math.round(argument * 10) / 10;
+var roundTenth = (number) => Math.round(number * 10) / 10;
 function polygonPath(polygon) {
 	let count = polygon.length;
 	if (count < 3) {
 		return ``;
 	}
-	let path = (argument) => {
-		let [value, value2] = [
-			polygon[argument % count],
-			polygon[(argument + 1) % count],
+	let path = (vertexIndex) => {
+		let [currentVertex, nextVertex] = [
+			polygon[vertexIndex % count],
+			polygon[(vertexIndex + 1) % count],
 		];
-		return `${roundTenth((value[0] + value2[0]) / 2)} ${roundTenth((value[1] + value2[1]) / 2)}`;
+		return `${roundTenth((currentVertex[0] + nextVertex[0]) / 2)} ${roundTenth((currentVertex[1] + nextVertex[1]) / 2)}`;
 	};
 	let index = `M${path(count - 1)}`;
-	for (let value = 0; value < count; value++) {
-		index += `Q${roundTenth(polygon[value][0])} ${roundTenth(polygon[value][1])} ${path(value)}`;
+	for (
+		let controlPointIndex = 0;
+		controlPointIndex < count;
+		controlPointIndex++
+	) {
+		index += `Q${roundTenth(polygon[controlPointIndex][0])} ${roundTenth(polygon[controlPointIndex][1])} ${path(controlPointIndex)}`;
 	}
 	return `${index}Z`;
 }
-var polygonsPath = (argument) =>
-	argument
-		.map((argument2) =>
-			polygonPath(
-				signedArea(argument2) < 0 ? [...argument2].reverse() : argument2,
-			),
+var polygonsPath = (polygons) =>
+	polygons
+		.map((polygon) =>
+			polygonPath(signedArea(polygon) < 0 ? [...polygon].reverse() : polygon),
 		)
 		.join(``);
 var pathCache = new WeakMap();

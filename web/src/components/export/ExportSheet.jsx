@@ -15,7 +15,7 @@ import {
 } from "../ui/Sheet.jsx";
 import { Credit } from "../Credit.jsx";
 function EmptyExport() {
-	let { actions: value } = useWrite();
+	let { actions } = useWrite();
 	return (
 		<div className="flex flex-col px-5 pt-1 pb-1 lg:px-6">
 			<div className="flex flex-col gap-1.5 pb-5.5">
@@ -27,7 +27,7 @@ function EmptyExport() {
 					data-autofocus={true}
 					onClick={(event) => closeDialog(event.currentTarget)}
 				>{`Write your first letter`}</SheetPrimaryButton>
-				<SheetSecondaryButton onClick={value.chooseFont}>
+				<SheetSecondaryButton onClick={actions.chooseFont}>
 					<FolderIcon className="size-5.5 shrink-0 lg:size-5" />
 					{`Open a font…`}
 				</SheetSecondaryButton>
@@ -36,44 +36,45 @@ function EmptyExport() {
 	);
 }
 function ExportSheet() {
-	let { state: value, actions: value2 } = useWrite();
-	let { sheet: value3 } = value;
-	let value4 = useExportLoaded();
-	let value5 = value3 === `export` || value3 === `picture`;
-	let value6 = value.drawn.size === 0;
-	let value7 = value5 && (value6 || value4);
-	let [value8, value9] = React.useState(`font`);
-	let value10 = value3 === `picture` ? `picture` : `font`;
-	if (value5 && value8 !== value10) {
-		value9(value10);
+	let { state, actions } = useWrite();
+	let { sheet } = state;
+	let exportLoaded = useExportLoaded();
+	let isExportSheet = sheet === `export` || sheet === `picture`;
+	let isEmpty = state.drawn.size === 0;
+	let isOpen = isExportSheet && (isEmpty || exportLoaded);
+	let [view, setView] = React.useState(`font`);
+	let nextView = sheet === `picture` ? `picture` : `font`;
+	if (isExportSheet && view !== nextView) {
+		setView(nextView);
 	}
 	React.useEffect(() => {
-		let value12 = (
+		let preloadHandle = (
 			window.requestIdleCallback ??
-			((argument) => window.setTimeout(argument, 1500))
+			((callback) => window.setTimeout(callback, 1500))
 		)(preloadExport);
-		return () => (window.cancelIdleCallback ?? window.clearTimeout)(value12);
+		return () =>
+			(window.cancelIdleCallback ?? window.clearTimeout)(preloadHandle);
 	}, []);
-	let value11 = React.useEffectEvent(() => value2.closeSheet());
+	let closeOnLoadError = React.useEffectEvent(() => actions.closeSheet());
 	React.useEffect(() => {
-		if (value5 && !value6 && !value4) {
-			loadExport().catch(value11);
+		if (isExportSheet && !isEmpty && !exportLoaded) {
+			loadExport().catch(closeOnLoadError);
 		}
-	}, [value5, value6, value4]);
+	}, [isExportSheet, isEmpty, exportLoaded]);
 	return (
 		<Panel
-			open={value7}
-			onClose={value2.closeSheet}
-			title={value8 === `picture` ? `Picture` : `Export`}
+			open={isOpen}
+			onClose={actions.closeSheet}
+			title={view === `picture` ? `Picture` : `Export`}
 			onDone={
-				value8 === `picture` ? () => value2.openSheet(`export`) : undefined
+				view === `picture` ? () => actions.openSheet(`export`) : undefined
 			}
 			anchor={`[data-anchor="actions"]`}
 		>
-			{value6 ? (
+			{isEmpty ? (
 				<EmptyExport />
-			) : value4 ? (
-				<LazyExportContent view={value8} />
+			) : exportLoaded ? (
+				<LazyExportContent view={view} />
 			) : null}
 			<Credit />
 		</Panel>

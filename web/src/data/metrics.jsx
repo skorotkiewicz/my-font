@@ -1,8 +1,8 @@
 var descender = -200;
 var stageHeight = 1200;
 var stageWidth = stageHeight * 2;
-var fontYToStage = (argument) => 920 - argument;
-var stageYFor = (argument) => 920 - argument;
+var fontYToStage = (fontY) => 920 - fontY;
+var stageYFor = (fontY) => 920 - fontY;
 var guideLines = [
 	{
 		id: `cap`,

@@ -27,79 +27,73 @@ var paperSpring = {
 	damping: 32,
 };
 var paperDeceleration = 0.998;
-var paperMomentum = (argument) =>
-	((argument / 1000) * paperDeceleration) / 0.0020000000000000018;
-var clampPaperIndex = (argument, argument2, argument3) =>
-	Math.min(argument3, Math.max(argument2, argument));
-function PaperCard({
-	paper: argument,
-	at: argument2,
-	x: argument3,
-	input: argument4,
-	onPick: argument5,
-}) {
-	let value = useTransform(
-		argument3,
-		(argument6) =>
+var paperMomentum = (velocity) =>
+	((velocity / 1000) * paperDeceleration) / 0.0020000000000000018;
+var clampPaperIndex = (index, minIndex, maxIndex) =>
+	Math.min(maxIndex, Math.max(minIndex, index));
+function PaperCard({ paper, at: cardIndex, x, input: pictureInput, onPick }) {
+	let scale = useTransform(
+		x,
+		(offsetX) =>
 			1 -
 			paperCardShrink *
 				Math.min(
 					1,
-					Math.abs(argument6 + argument2 * paperCardStep) / paperCardStep,
+					Math.abs(offsetX + cardIndex * paperCardStep) / paperCardStep,
 				),
 	);
 	return (
 		<motion.button
 			type="button"
 			tabIndex={-1}
-			onClick={argument5}
+			onClick={onPick}
 			style={{
-				left: argument2 * paperCardStep,
-				scale: value,
+				left: cardIndex * paperCardStep,
+				scale: scale,
 			}}
 			className="absolute top-0 size-62 cursor-[inherit] rounded-[1.375rem] shadow-[0_16px_40px_rgb(4_5_40/0.4)]"
 		>
 			<PictureCanvas
-				input={argument4}
-				paper={argument.id}
+				input={pictureInput}
+				paper={paper.id}
 				pixels={paperCardPixels}
-				className={`size-full rounded-[inherit] ${argument.id === `carbon` ? `outline-1 -outline-offset-1 outline-paper/20` : ``}`}
+				className={`size-full rounded-[inherit] ${paper.id === `carbon` ? `outline-1 -outline-offset-1 outline-paper/20` : ``}`}
 			/>
 		</motion.button>
 	);
 }
-function PaperCarousel({ input: argument, onPick: argument2 }) {
-	let value = paperStyles.findIndex(
-		(argument3) => argument3.id === argument.style.paper,
+function PaperCarousel({ input: pictureInput, onPick }) {
+	let selectedIndex = paperStyles.findIndex(
+		(paperStyle) => paperStyle.id === pictureInput.style.paper,
 	);
-	let value2 = paperStyles.length - 1;
-	let value3 = useReducedMotion();
-	let value4 = useMotionValue(-value * paperCardStep);
-	let value5 = React.useRef(undefined);
-	let value6 = React.useRef(false);
-	let value7 = React.useRef(0);
-	let value8 = (argument3) => {
-		value5.current?.stop();
-		let value10 = value7.current;
-		value7.current = 0;
-		value5.current = animate(
-			value4,
-			-argument3 * paperCardStep,
-			value3
+	let maxIndex = paperStyles.length - 1;
+	let reduceMotion = useReducedMotion();
+	let x = useMotionValue(-selectedIndex * paperCardStep);
+	let animationRef = React.useRef(undefined);
+	let wasDraggedRef = React.useRef(false);
+	let velocityRef = React.useRef(0);
+	let animateToIndex = (nextIndex) => {
+		animationRef.current?.stop();
+		let initialVelocity = velocityRef.current;
+		velocityRef.current = 0;
+		animationRef.current = animate(
+			x,
+			-nextIndex * paperCardStep,
+			reduceMotion
 				? {
 						duration: 0,
 					}
 				: {
 						...paperSpring,
-						velocity: value10,
+						velocity: initialVelocity,
 					},
 		);
 	};
-	let value9 = React.useEffectEvent(value8);
+	let animateSelectedIndex = React.useEffectEvent(animateToIndex);
 	React.useEffect(() => {
-		value9(value);
-		return () => value5.current?.stop();
-	}, [value]);
+		animateSelectedIndex(selectedIndex);
+		return () => animationRef.current?.stop();
+	}, [selectedIndex]);
 	return (
 		<div
 			aria-hidden={true}
@@ -109,42 +103,44 @@ function PaperCarousel({ input: argument, onPick: argument2 }) {
 			<motion.div
 				drag="x"
 				style={{
-					x: value4,
+					x: x,
 				}}
 				dragConstraints={{
-					left: -value2 * paperCardStep,
+					left: -maxIndex * paperCardStep,
 					right: 0,
 				}}
 				dragElastic={0.2}
 				dragMomentum={false}
-				onPointerDown={() => (value6.current = false)}
-				onDragStart={() => (value6.current = true)}
-				onDragEnd={(argument3, { velocity: argument4 }) => {
-					value7.current = argument4.x;
-					let value10 = clampPaperIndex(
+				onPointerDown={() => (wasDraggedRef.current = false)}
+				onDragStart={() => (wasDraggedRef.current = true)}
+				onDragEnd={(dragEvent, { velocity: dragVelocity }) => {
+					velocityRef.current = dragVelocity.x;
+					let projectedIndex = clampPaperIndex(
 						Math.round(
-							-(value4.get() + paperMomentum(argument4.x)) / paperCardStep,
+							-(x.get() + paperMomentum(dragVelocity.x)) / paperCardStep,
 						),
 						0,
-						value2,
+						maxIndex,
 					);
-					if (value10 === value) {
-						value8(value);
+					if (projectedIndex === selectedIndex) {
+						animateToIndex(selectedIndex);
 					} else {
-						argument2(paperStyles[value10].id);
+						onPick(paperStyles[projectedIndex].id);
 					}
 				}}
-				onPointerUp={() => value6.current || value8(value)}
+				onPointerUp={() =>
+					wasDraggedRef.current || animateToIndex(selectedIndex)
+				}
 				className="absolute top-2 left-1/2 -ml-31 size-62 cursor-grab active:cursor-grabbing"
 			>
-				{paperStyles.map((argument3, argument4) => (
+				{paperStyles.map((paper, cardIndex) => (
 					<PaperCard
-						paper={argument3}
-						at={argument4}
-						x={value4}
-						input={argument}
-						onPick={() => value6.current || argument2(argument3.id)}
-						key={argument3.id}
+						paper={paper}
+						at={cardIndex}
+						x={x}
+						input={pictureInput}
+						onPick={() => wasDraggedRef.current || onPick(paper.id)}
+						key={paper.id}
 					/>
 				))}
 			</motion.div>
@@ -152,7 +148,7 @@ function PaperCarousel({ input: argument, onPick: argument2 }) {
 	);
 }
 var paperLabelClass = `text-caption font-medium text-paper/90`;
-function PaperSwatch({ paper: argument }) {
+function PaperSwatch({ paper }) {
 	return (
 		<span className="relative font-normal">
 			<AnimatePresence mode="popLayout" initial={false}>
@@ -175,52 +171,52 @@ function PaperSwatch({ paper: argument }) {
 						bounce: 0,
 					}}
 					className="inline-block"
-					key={argument.id}
+					key={paper.id}
 				>
-					{argument.name}
+					{paper.name}
 				</motion.span>
 			</AnimatePresence>
 		</span>
 	);
 }
-function PaperPicker({ picked: argument, onPick: argument2 }) {
-	let value = React.useId();
+function PaperPicker({ picked: pickedPaper, onPick }) {
+	let labelId = React.useId();
 	return (
 		<div
 			role="radiogroup"
-			aria-labelledby={value}
+			aria-labelledby={labelId}
 			className="flex flex-col gap-2 px-5 pb-4.5 lg:px-6"
 		>
 			<div className={`flex items-baseline justify-between ${paperLabelClass}`}>
-				<span id={value}>{`Colour`}</span>
-				<PaperSwatch paper={paperStyleFor(argument)} />
+				<span id={labelId}>{`Colour`}</span>
+				<PaperSwatch paper={paperStyleFor(pickedPaper)} />
 			</div>
 			<div className="flex justify-between">
-				{paperStyles.map((argument3) => (
+				{paperStyles.map((paper) => (
 					<label
 						className="pressable relative grid size-11 cursor-pointer place-items-center rounded-full has-focus-visible:outline-2 has-focus-visible:outline-offset-4 has-focus-visible:outline-(--focus)"
-						key={argument3.id}
+						key={paper.id}
 					>
 						<input
 							type="radio"
 							name="picture-paper"
-							value={argument3.id}
-							checked={argument3.id === argument}
-							onChange={() => argument2(argument3.id)}
+							value={paper.id}
+							checked={paper.id === pickedPaper}
+							onChange={() => onPick(paper.id)}
 							className="peer sr-only"
 						/>
-						<span className="sr-only">{argument3.name}</span>
+						<span className="sr-only">{paper.name}</span>
 						<span
 							aria-hidden={true}
-							className={`grid size-10 place-items-center rounded-full ${argument3.id === `carbon` ? `inset-ring-[1.5px] inset-ring-paper/45` : ``}`}
+							className={`grid size-10 place-items-center rounded-full ${paper.id === `carbon` ? `inset-ring-[1.5px] inset-ring-paper/45` : ``}`}
 							style={{
-								backgroundColor: argument3.ground,
+								backgroundColor: paper.ground,
 							}}
 						>
 							<span
 								className="size-3.5 rounded-full"
 								style={{
-									backgroundColor: argument3.hand,
+									backgroundColor: paper.hand,
 								}}
 							/>
 						</span>
@@ -234,107 +230,109 @@ function PaperPicker({ picked: argument, onPick: argument2 }) {
 		</div>
 	);
 }
-function RulingPicker({ picked: argument, onPick: argument2 }) {
-	let value = React.useId();
-	let value2 = rulingStyles.findIndex((argument3) => argument3.id === argument);
+function RulingPicker({ picked: pickedRuling, onPick }) {
+	let labelId = React.useId();
+	let selectedIndex = rulingStyles.findIndex(
+		(ruling) => ruling.id === pickedRuling,
+	);
 	return (
 		<div
 			role="radiogroup"
-			aria-labelledby={value}
+			aria-labelledby={labelId}
 			className="flex flex-col gap-2.5 px-5 pb-5.5 lg:px-6"
 		>
-			<span id={value} className={paperLabelClass}>{`Paper`}</span>
+			<span id={labelId} className={paperLabelClass}>{`Paper`}</span>
 			<div className="relative grid h-11 grid-cols-4 rounded-full bg-paper/14 p-1">
 				<span
 					aria-hidden={true}
 					className="absolute inset-y-1 left-1 w-[calc((100%-0.5rem)/4)] rounded-full bg-paper transition-transform duration-200 ease-out motion-reduce:transition-none"
 					style={{
-						transform: `translateX(${value2 * 100}%)`,
+						transform: `translateX(${selectedIndex * 100}%)`,
 					}}
 				/>
-				{rulingStyles.map((argument3) => (
+				{rulingStyles.map((ruling) => (
 					<label
 						className="pressable relative grid cursor-pointer place-items-center rounded-full text-[0.9375rem] leading-5 font-medium text-paper transition-colors duration-200 has-checked:font-semibold has-checked:text-carbon has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-(--focus)"
-						key={argument3.id}
+						key={ruling.id}
 					>
 						<input
 							type="radio"
 							name="picture-ruling"
-							value={argument3.id}
-							checked={argument3.id === argument}
-							onChange={() => argument2(argument3.id)}
+							value={ruling.id}
+							checked={ruling.id === pickedRuling}
+							onChange={() => onPick(ruling.id)}
 							className="sr-only"
 						/>
-						{argument3.name}
+						{ruling.name}
 					</label>
 				))}
 			</div>
 		</div>
 	);
 }
-function PictureSaveButton({ picture: argument }) {
-	let { shares: value, sent: value2, empty: value3, send: value4 } = argument;
+function PictureSaveButton({ picture: pictureDownload }) {
+	let { shares, sent, empty, send } = pictureDownload;
 	return (
 		<SheetPrimaryButton
-			onClick={value4}
-			disabled={value3}
+			onClick={send}
+			disabled={empty}
 			className="w-full disabled:opacity-40"
 		>
 			<span
-				className={value2 ? `icon-in flex shrink-0` : `flex shrink-0`}
-				key={String(value2)}
+				className={sent ? `icon-in flex shrink-0` : `flex shrink-0`}
+				key={String(sent)}
 			>
-				{value2 ? <CheckIcon /> : value ? <ShareIcon /> : <DownloadIcon />}
+				{sent ? <CheckIcon /> : shares ? <ShareIcon /> : <DownloadIcon />}
 			</span>
 			<span role="status">
-				{value2
+				{sent
 					? `Sent to your downloads`
-					: value
+					: shares
 						? `Share picture`
 						: `Save picture`}
 			</span>
 		</SheetPrimaryButton>
 	);
 }
-function PictureStyleView({ input: argument, picture: argument2 }) {
-	let { actions: value } = useWrite();
-	let value2 = React.useRef(null);
-	let { paper: value3, ruling: value4 } = argument.style;
+function PictureStyleView({ input: pictureInput, picture: pictureDownload }) {
+	let { actions } = useWrite();
+	let containerRef = React.useRef(null);
+	let { paper, ruling } = pictureInput.style;
 	React.useEffect(() => {
-		value2.current
+		containerRef.current
 			?.querySelector(`input[name="picture-paper"]:checked`)
 			?.focus({
 				preventScroll: true,
 			});
 	}, []);
 	return (
-		<div ref={value2} className="flex flex-col pb-1">
+		<div ref={containerRef} className="flex flex-col pb-1">
 			<PaperCarousel
-				input={argument}
-				onPick={(argument3) =>
-					value.stylePicture({
-						paper: argument3,
+				input={pictureInput}
+				onPick={(nextPaper) =>
+					actions.stylePicture({
+						paper: nextPaper,
 					})
 				}
 			/>
 			<PaperPicker
-				picked={value3}
-				onPick={(argument3) =>
-					value.stylePicture({
-						paper: argument3,
+				picked={paper}
+				onPick={(nextPaper) =>
+					actions.stylePicture({
+						paper: nextPaper,
 					})
 				}
 			/>
 			<RulingPicker
-				picked={value4}
-				onPick={(argument3) =>
-					value.stylePicture({
-						ruling: argument3,
+				picked={ruling}
+				onPick={(nextRuling) =>
+					actions.stylePicture({
+						ruling: nextRuling,
 					})
 				}
 			/>
 			<div className="px-5 lg:px-6">
-				<PictureSaveButton picture={argument2} />
+				<PictureSaveButton picture={pictureDownload} />
 			</div>
 		</div>
 	);

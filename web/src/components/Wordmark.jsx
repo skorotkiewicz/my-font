@@ -20,18 +20,18 @@ var wordmarkShape = {
 		`M1013 873Q1015 881 1017 899Q1018 918 1015 928Q1011 939 1004 948Q997 957 988 963Q979 969 968 972Q957 975 946 974Q935 973 924 969Q914 965 905 958Q897 950 891 941Q886 931 883 920Q881 909 882 898Q884 887 888 877Q893 867 901 859Q909 851 918 845Q928 840 939 839Q951 837 962 839Q973 841 982 846Q992 851 1000 859Q1008 868 1012 878Q1017 888 1018 899Q1019 910 1017 921Q1014 932 1008 942Q1002 951 994 958Q985 966 975 970Q964 974 953 974Q942 975 931 972Q920 969 911 962Q902 956 895 947Q889 938 885 928Q882 918 880 906Q879 895 880 886Q881 878 884 870Q887 863 892 856Q897 849 904 844Q910 838 917 835Q925 831 933 829Q941 827 949 827Q958 828 966 830Q974 832 981 836Q988 840 995 846Q1001 851 1005 858Q1010 865 1013 873Z`,
 	],
 };
-function Wordmark({ className: argument }) {
+function Wordmark({ className }) {
 	let {
-		x: value,
-		y: value2,
-		width: value3,
-		height: value4,
+		x: viewBoxX,
+		y: viewBoxY,
+		width: viewBoxWidth,
+		height: viewBoxHeight,
 	} = wordmarkShape.viewBox;
 	return (
 		<span
 			role="img"
 			aria-label="Ductus"
-			className={`inline-flex shrink-0 items-end text-[1.75rem] ${argument ?? ``}`}
+			className={`inline-flex shrink-0 items-end text-[1.75rem] ${className ?? ``}`}
 		>
 			<span
 				aria-hidden={true}
@@ -39,11 +39,11 @@ function Wordmark({ className: argument }) {
 			>{`duc`}</span>
 			<svg
 				aria-hidden={true}
-				viewBox={`${value} ${value2} ${value3} ${value4}`}
+				viewBox={`${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`}
 				className="mb-[0.2143em] ml-[0.0893em] h-[0.857em] w-[1.0714em] shrink-0 fill-hand"
 			>
-				{wordmarkShape.paths.map((argument2) => (
-					<path d={argument2} key={argument2} />
+				{wordmarkShape.paths.map((pathData) => (
+					<path d={pathData} key={pathData} />
 				))}
 			</svg>
 		</span>

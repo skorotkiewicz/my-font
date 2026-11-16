@@ -1,33 +1,33 @@
 var defaultFamilyName = `My Hand`;
-function truncateName(argument, argument2) {
-	let value = ``;
-	for (let value2 of argument) {
-		if (value.length + value2.length > argument2) {
+function truncateName(name, maxLength) {
+	let truncatedName = ``;
+	for (let character of name) {
+		if (truncatedName.length + character.length > maxLength) {
 			break;
 		}
-		value += value2;
+		truncatedName += character;
 	}
-	return value;
+	return truncatedName;
 }
-var familyName = (argument) =>
+var familyName = (name) =>
 	truncateName(
-		argument
+		name
 			.replace(/\p{Cc}/gu, ` `)
 			.replace(/\s+/g, ` `)
 			.trim(),
 		31,
 	).trim() || `My Hand`;
-function fileStem(argument) {
-	let value = familyName(argument)
+function fileStem(name) {
+	let stem = familyName(name)
 		.normalize(`NFC`)
 		.replace(/[^\p{L}\p{M}\p{N}]/gu, ``);
-	if (/[\p{L}\p{N}]/u.test(value)) {
-		return value;
+	if (/[\p{L}\p{N}]/u.test(stem)) {
+		return stem;
 	} else {
 		return `Ductus`;
 	}
 }
-var fontFileName = (argument, argument2) =>
-	`${fileStem(argument)}-Regular.${argument2}`;
-var pictureFileName = (argument) => `${fileStem(argument)}.png`;
+var fontFileName = (name, extension) =>
+	`${fileStem(name)}-Regular.${extension}`;
+var pictureFileName = (name) => `${fileStem(name)}.png`;
 export { defaultFamilyName, familyName, fontFileName, pictureFileName };

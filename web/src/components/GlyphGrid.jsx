@@ -1,90 +1,93 @@
 import * as React from "react";
 import { useWrite } from "../state/WriteProvider.jsx";
-function closestGridCell(argument, argument2, argument3) {
-	let value = argument2.getBoundingClientRect();
-	let value2;
-	let value3 = Infinity;
-	let value4 = Infinity;
-	for (let value5 of argument) {
-		let value6 = value5.getBoundingClientRect();
-		let value7 = (value6.top - value.top) * argument3;
-		if (value7 < 1) {
+function closestGridCell(cells, currentCell, rowDirection) {
+	let currentRect = currentCell.getBoundingClientRect();
+	let closestCell;
+	let closestRowDistance = Infinity;
+	let closestColumnDistance = Infinity;
+	for (let cell of cells) {
+		let cellRect = cell.getBoundingClientRect();
+		let rowDistance = (cellRect.top - currentRect.top) * rowDirection;
+		if (rowDistance < 1) {
 			continue;
 		}
-		let value8 = Math.abs(value6.left - value.left);
+		let columnDistance = Math.abs(cellRect.left - currentRect.left);
 		if (
-			value7 < value3 - 1 ||
-			(Math.abs(value7 - value3) <= 1 && value8 < value4)
+			rowDistance < closestRowDistance - 1 ||
+			(Math.abs(rowDistance - closestRowDistance) <= 1 &&
+				columnDistance < closestColumnDistance)
 		) {
-			value2 = value5;
-			value3 = value7;
-			value4 = value8;
+			closestCell = cell;
+			closestRowDistance = rowDistance;
+			closestColumnDistance = columnDistance;
 		}
 	}
-	return value2;
+	return closestCell;
 }
 function GlyphGrid({
-	set: argument,
-	onSelect: argument2,
+	set: characterSet,
+	onSelect,
 	Tile: _Component1,
-	className: argument3,
-	tileClassName: argument4,
+	className,
+	tileClassName,
 }) {
-	let { state: value } = useWrite();
-	let { codepoints: value2 } = argument;
-	let [value3, value4] = React.useState();
-	let value5 = value3 ?? (value2.includes(value.cp) ? value.cp : value2[0]);
+	let { state } = useWrite();
+	let { codepoints } = characterSet;
+	let [focusedCodepoint, setFocusedCodepoint] = React.useState();
+	let tabStopCodepoint =
+		focusedCodepoint ??
+		(codepoints.includes(state.cp) ? state.cp : codepoints[0]);
 	return (
 		<div
 			role="group"
-			aria-label={`${argument.label} glyphs`}
+			aria-label={`${characterSet.label} glyphs`}
 			onKeyDown={(event) => {
-				let value6 = document.activeElement;
+				let activeCell = document.activeElement;
 				if (
-					!(value6 instanceof HTMLElement) ||
-					value6.parentElement !== event.currentTarget
+					!(activeCell instanceof HTMLElement) ||
+					activeCell.parentElement !== event.currentTarget
 				) {
 					return;
 				}
-				let value7 = [...event.currentTarget.children];
-				let value8 = value7.indexOf(value6);
-				let value9 =
+				let gridCells = [...event.currentTarget.children];
+				let activeIndex = gridCells.indexOf(activeCell);
+				let nextCell =
 					event.key === `ArrowLeft`
-						? value7[value8 - 1]
+						? gridCells[activeIndex - 1]
 						: event.key === `ArrowRight`
-							? value7[value8 + 1]
+							? gridCells[activeIndex + 1]
 							: event.key === `ArrowUp`
-								? closestGridCell(value7, value6, -1)
+								? closestGridCell(gridCells, activeCell, -1)
 								: event.key === `ArrowDown`
-									? closestGridCell(value7, value6, 1)
+									? closestGridCell(gridCells, activeCell, 1)
 									: event.key === `Home`
-										? value7[0]
+										? gridCells[0]
 										: event.key === `End`
-											? value7[value7.length - 1]
+											? gridCells[gridCells.length - 1]
 											: null;
-				if (value9 !== null) {
+				if (nextCell !== null) {
 					event.preventDefault();
 					event.stopPropagation();
-					value9?.focus();
+					nextCell?.focus();
 				}
 			}}
-			onFocus={(event) => value4(Number(event.target.dataset.cp))}
+			onFocus={(event) => setFocusedCodepoint(Number(event.target.dataset.cp))}
 			onBlur={(event) => {
 				if (!event.currentTarget.contains(event.relatedTarget)) {
-					value4(undefined);
+					setFocusedCodepoint(undefined);
 				}
 			}}
-			className={argument3}
+			className={className}
 		>
-			{value2.map((argument5) => (
+			{codepoints.map((glyphCodepoint) => (
 				<_Component1
-					cp={argument5}
-					drawn={value.drawn.has(argument5)}
-					current={argument5 === value.cp}
-					tabIndex={argument5 === value5 ? 0 : -1}
-					onSelect={argument2}
-					className={argument4}
-					key={argument5}
+					cp={glyphCodepoint}
+					drawn={state.drawn.has(glyphCodepoint)}
+					current={glyphCodepoint === state.cp}
+					tabIndex={glyphCodepoint === tabStopCodepoint ? 0 : -1}
+					onSelect={onSelect}
+					className={tileClassName}
+					key={glyphCodepoint}
 				/>
 			))}
 		</div>
