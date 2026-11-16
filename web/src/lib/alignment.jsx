@@ -25,9 +25,9 @@ var minimumInkHeight = 50;
 var metricSampleCount = 4;
 var characterRules = new Map();
 var addCharacterRules = (characters, rule) =>
-	[...characters].forEach((character) =>
-		characterRules.set(character.codePointAt(0), rule),
-	);
+	[...characters].forEach((character) => {
+		characterRules.set(character.codePointAt(0), rule);
+	});
 addCharacterRules(`acemnorsuvwxz`, {
 	top: `xHeight`,
 	stands: true,
@@ -64,7 +64,7 @@ addCharacterRules(`0123456789`, {
 	stands: true,
 });
 function strokeInkBounds(stroke) {
-	let bounds = polygonBounds(polygonsForStroke(stroke));
+	const bounds = polygonBounds(polygonsForStroke(stroke));
 	return (
 		bounds && {
 			xMin: bounds.xMin,
@@ -80,19 +80,19 @@ function drawingBounds(codePoint, drawing) {
 	if (cachedBounds !== undefined) {
 		return cachedBounds;
 	}
-	let strokeBounds = drawing.strokes.flatMap(
+	const strokeBounds = drawing.strokes.flatMap(
 		(stroke) => strokeInkBounds(stroke) ?? [],
 	);
 	if (strokeBounds.length) {
-		let combinedBounds = strokeBounds.reduce((bounds, bounds2) => ({
+		const combinedBounds = strokeBounds.reduce((bounds, bounds2) => ({
 			xMin: Math.min(bounds.xMin, bounds2.xMin),
 			xMax: Math.max(bounds.xMax, bounds2.xMax),
 			yMin: Math.min(bounds.yMin, bounds2.yMin),
 			yMax: Math.max(bounds.yMax, bounds2.yMax),
 		}));
-		let boundsHeight = (candidateBounds) =>
+		const boundsHeight = (candidateBounds) =>
 			candidateBounds.yMax - candidateBounds.yMin;
-		let bodyBounds = characterRules.get(codePoint)?.stem
+		const bodyBounds = characterRules.get(codePoint)?.stem
 			? strokeBounds.reduce((tallestBounds, nextBounds) =>
 					boundsHeight(nextBounds) > boundsHeight(tallestBounds)
 						? nextBounds
@@ -124,18 +124,18 @@ function placementFor(rule, bodyBounds, baseline, metrics) {
 	if (!rule || bodyBounds.yMax - bodyBounds.yMin < 1) {
 		return defaultPlacement;
 	}
-	let topOffset = rule.top
+	const topOffset = rule.top
 		? baseline + metrics[rule.top] - bodyBounds.yMax
 		: NaN;
-	let baselineOffset = rule.stands ? baseline - bodyBounds.yMin : NaN;
-	let topWithinTolerance =
+	const baselineOffset = rule.stands ? baseline - bodyBounds.yMin : NaN;
+	const topWithinTolerance =
 		Math.abs(topOffset) <= (rule.topReach ?? verticalTolerance);
-	let baselineWithinTolerance =
+	const baselineWithinTolerance =
 		baselineOffset <= baselineTolerance && baselineOffset >= -130;
 	if (topWithinTolerance && baselineWithinTolerance) {
-		let adjustedTop = bodyBounds.yMax + topOffset * minimumInkScale;
-		let adjustedBottom = bodyBounds.yMin + baselineOffset * minimumInkScale;
-		let inkScale = clamp(
+		const adjustedTop = bodyBounds.yMax + topOffset * minimumInkScale;
+		const adjustedBottom = bodyBounds.yMin + baselineOffset * minimumInkScale;
+		const inkScale = clamp(
 			(adjustedTop - adjustedBottom) / (bodyBounds.yMax - bodyBounds.yMin),
 			0.88,
 			1.12,
@@ -167,7 +167,7 @@ function applyDrawingFix(
 	if (fixScale === 1 && fixVerticalOffset === 0) {
 		return placement;
 	}
-	let transformedCenterY =
+	const transformedCenterY =
 		(placement.scale * (drawingInk.yMin + drawingInk.yMax)) / 2 + placement.dy;
 	return {
 		scale: placement.scale * fixScale,
@@ -178,8 +178,8 @@ function applyDrawingFix(
 	};
 }
 function alignDrawings(drawings, tidy) {
-	let boundedDrawings = drawings.flatMap(({ cp: codePoint, drawing }) => {
-		let bounds = drawingBounds(codePoint, drawing);
+	const boundedDrawings = drawings.flatMap(({ cp: codePoint, drawing }) => {
+		const bounds = drawingBounds(codePoint, drawing);
 		if (bounds) {
 			return [
 				{
@@ -193,9 +193,9 @@ function alignDrawings(drawings, tidy) {
 			return [];
 		}
 	});
-	let placements = new Map();
+	const placements = new Map();
 	if (!tidy) {
-		for (let unalignedDrawing of boundedDrawings) {
+		for (const unalignedDrawing of boundedDrawings) {
 			placements.set(
 				unalignedDrawing.cp,
 				applyDrawingFix(
@@ -210,13 +210,13 @@ function alignDrawings(drawings, tidy) {
 			lines: defaultMetrics,
 		};
 	}
-	let baseline = blendMedian(
+	const baseline = blendMedian(
 		boundedDrawings.flatMap((baselineSample) =>
 			baselineSample.rule?.stands ? [baselineSample.body.yMin] : [],
 		),
 		0,
 	);
-	let metricHeight = (metricName) =>
+	const metricHeight = (metricName) =>
 		blendMedian(
 			boundedDrawings.flatMap((heightSample) =>
 				heightSample.rule?.top === metricName
@@ -225,14 +225,14 @@ function alignDrawings(drawings, tidy) {
 			),
 			defaultMetrics[metricName],
 		);
-	let metrics = {
+	const metrics = {
 		xHeight: metricHeight(`xHeight`),
 		ascender: metricHeight(`ascender`),
 		capHeight: metricHeight(`capHeight`),
 		digitHeight: metricHeight(`digitHeight`),
 	};
-	for (let boundedDrawing of boundedDrawings) {
-		let placement = placementFor(
+	for (const boundedDrawing of boundedDrawings) {
+		const placement = placementFor(
 			boundedDrawing.rule,
 			boundedDrawing.body,
 			baseline,

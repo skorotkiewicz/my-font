@@ -23,20 +23,20 @@ function Sheet({
 	anchor,
 	children,
 }) {
-	let dialogRef = React.useRef(null);
-	let dragRef = React.useRef(null);
-	let suppressClickRef = React.useRef(false);
-	let openedAtRef = React.useRef(0);
-	let [keepContent, setKeepContent] = React.useState(open);
+	const dialogRef = React.useRef(null);
+	const dragRef = React.useRef(null);
+	const suppressClickRef = React.useRef(false);
+	const openedAtRef = React.useRef(0);
+	const [keepContent, setKeepContent] = React.useState(open);
 	if (open && !keepContent) {
 		setKeepContent(true);
 	}
 	React.useEffect(() => {
-		let dialogElement = dialogRef.current;
+		const dialogElement = dialogRef.current;
 		if (open && !dialogElement.open) {
 			dialogElement.showModal();
 			openedAtRef.current = performance.now();
-			let focusTarget = dialogElement.querySelector(
+			const focusTarget = dialogElement.querySelector(
 				initialFocus ?? `[data-autofocus]`,
 			);
 			focusTarget?.scrollIntoView({
@@ -53,9 +53,9 @@ function Sheet({
 		if (!open || !anchor) {
 			return;
 		}
-		let dialogElement = dialogRef.current;
-		let positionPanel = () => {
-			let anchorRect = isDesktop()
+		const dialogElement = dialogRef.current;
+		const positionPanel = () => {
+			const anchorRect = isDesktop()
 				? document.querySelector(anchor)?.getBoundingClientRect()
 				: undefined;
 			if (!anchorRect) {
@@ -63,7 +63,7 @@ function Sheet({
 				dialogElement.style.removeProperty(`--panel-right`);
 				return;
 			}
-			let panelTop = Math.max(
+			const panelTop = Math.max(
 				panelMargin,
 				Math.min(
 					anchorRect.bottom + panelGap,
@@ -83,8 +83,8 @@ function Sheet({
 		window.addEventListener(`resize`, positionPanel);
 		return () => window.removeEventListener(`resize`, positionPanel);
 	}, [open, anchor]);
-	let handlePointerDown = (event) => {
-		let target = event.target;
+	const handlePointerDown = (event) => {
+		const target = event.target;
 		if (
 			dragRef.current ||
 			(event.pointerType === `mouse` && event.button !== 0) ||
@@ -94,7 +94,7 @@ function Sheet({
 		) {
 			return;
 		}
-		let { clientY, timeStamp, pointerId } = event;
+		const { clientY, timeStamp, pointerId } = event;
 		dragRef.current = {
 			pointerId: pointerId,
 			startY: clientY,
@@ -106,8 +106,8 @@ function Sheet({
 			velocity: 0,
 		};
 	};
-	let handlePointerMove = (event) => {
-		let event2 = dragRef.current;
+	const handlePointerMove = (event) => {
+		const event2 = dragRef.current;
 		if (!event2 || event.pointerId !== event2.pointerId) {
 			return;
 		}
@@ -120,31 +120,31 @@ function Sheet({
 			event.currentTarget.setPointerCapture(event.pointerId);
 			event.currentTarget.style.transition = `none`;
 		}
-		let elapsedMs = event.timeStamp - event2.lastT;
+		const elapsedMs = event.timeStamp - event2.lastT;
 		if (elapsedMs > 0) {
 			event2.velocity = (event.clientY - event2.lastY) / elapsedMs;
 		}
 		event2.lastY = event.clientY;
 		event2.lastT = event.timeStamp;
-		let deltaY = event.clientY - event2.startY;
+		const deltaY = event.clientY - event2.startY;
 		event2.dy = deltaY >= 0 ? deltaY : -rubberBand(-deltaY, event2.height / 4);
 		event.currentTarget.style.transform = `translateY(${event2.dy.toFixed(1)}px)`;
 	};
-	let finishDrag = (event, shouldClose) => {
-		let event2 = dragRef.current;
-		if (
-			!event2 ||
-			event.pointerId !== event2.pointerId ||
-			((dragRef.current = null), !event2.moving)
-		) {
+	const finishDrag = (event, shouldClose) => {
+		const event2 = dragRef.current;
+		if (!event2 || event.pointerId !== event2.pointerId) {
 			return;
 		}
-		let dialogElement = event.currentTarget;
+		dragRef.current = null;
+		if (!event2.moving) {
+			return;
+		}
+		const dialogElement = event.currentTarget;
 		suppressClickRef.current = true;
 		setTimeout(() => (suppressClickRef.current = false));
 		dialogElement.style.transition = ``;
 		dialogElement.style.transform = ``;
-		let isFastSwipe =
+		const isFastSwipe =
 			event.timeStamp - event2.lastT < sheetSwipeDistance &&
 			event2.velocity > sheetVelocityThreshold;
 		if (
@@ -156,6 +156,7 @@ function Sheet({
 		}
 	};
 	return (
+		// biome-ignore lint/a11y/useKeyWithClickEvents: The native modal dialog already closes with Escape; this click handler only adds backdrop dismissal.
 		<dialog
 			ref={dialogRef}
 			role={role}
@@ -219,7 +220,7 @@ function Panel({
 	anchor,
 	children,
 }) {
-	let titleId = React.useId();
+	const titleId = React.useId();
 	return (
 		<Sheet
 			open={open}
@@ -252,8 +253,8 @@ function Panel({
 	);
 }
 function Alert({ open, onClose, title, message, children }) {
-	let titleId = React.useId();
-	let descriptionId = React.useId();
+	const titleId = React.useId();
+	const descriptionId = React.useId();
 	return (
 		<Sheet
 			open={open}

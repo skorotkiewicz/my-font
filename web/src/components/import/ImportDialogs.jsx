@@ -16,8 +16,8 @@ import { ProjectSample } from "../ProjectSample.jsx";
 import { letterCount, relativeDate } from "../../lib/format.jsx";
 import { capitalize } from "../AlignmentPreview.jsx";
 function FileDropOverlay() {
-	let { actions } = useWrite();
-	let isDraggingFile = useFileDrop(actions.openFont);
+	const { actions } = useWrite();
+	const isDraggingFile = useFileDrop(actions.openFont);
 	return (
 		<div
 			aria-hidden={!isDraggingFile}
@@ -59,12 +59,12 @@ function ImportFileRow({ name: fileName, about, tile: tileClass }) {
 	);
 }
 function ImportErrorDialog() {
-	let { state, actions } = useWrite();
-	let refusedImport =
+	const { state, actions } = useWrite();
+	const refusedImport =
 		state.opening?.kind === `refused` ? state.opening : undefined;
-	let errorContent = importErrors[refusedImport?.reason ?? `not-ductus`];
-	let expectedFileName = fontFileName(state.project.name, `otf`);
-	let errorContext = {
+	const errorContent = importErrors[refusedImport?.reason ?? `not-ductus`];
+	const expectedFileName = fontFileName(state.project.name, `otf`);
+	const errorContext = {
 		name: refusedImport?.fileName ?? ``,
 		size: refusedImport?.size ?? 0,
 		expected: expectedFileName,
@@ -138,13 +138,13 @@ function ImportProjectCard({ name, badge, project, when }) {
 	);
 }
 function ReplaceProjectDialog() {
-	let { state, actions } = useWrite();
-	let pendingReplacement =
+	const { state, actions } = useWrite();
+	const pendingReplacement =
 		state.opening?.kind === `replace` ? state.opening : undefined;
-	let writtenCount = letterCount(
+	const writtenCount = letterCount(
 		pendingReplacement ? writtenDrawings(pendingReplacement.device).length : 0,
 	);
-	let isDeviceNewer = pendingReplacement
+	const isDeviceNewer = pendingReplacement
 		? pendingReplacement.device.updatedAt > pendingReplacement.exportedAt
 		: false;
 	return (

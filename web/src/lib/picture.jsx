@@ -5,7 +5,7 @@ var pictureLineHeight = 1.2;
 var pictureFontScale = 0.92;
 var pictureFontSizes = [200, 176, 154, 136, 120, 106, 94, 84, 74, 66, 58];
 function measureSpacedText(text, maxWidth, measureText) {
-	let characters = [...text];
+	const characters = [...text];
 	let fittingLength = 1;
 	while (
 		fittingLength < characters.length &&
@@ -16,12 +16,12 @@ function measureSpacedText(text, maxWidth, measureText) {
 	return characters.slice(0, fittingLength).join(``);
 }
 function wrapPictureText(text, maxWidth, measureText) {
-	let wrappedLines = [];
-	for (let paragraph of text.split(`
+	const wrappedLines = [];
+	for (const paragraph of text.split(`
 `)) {
 		let currentLine = ``;
-		for (let word of paragraph.split(/\s+/).filter(Boolean)) {
-			let candidateLine = currentLine ? `${currentLine} ${word}` : word;
+		for (const word of paragraph.split(/\s+/).filter(Boolean)) {
+			const candidateLine = currentLine ? `${currentLine} ${word}` : word;
 			if (measureText(candidateLine) <= maxWidth) {
 				currentLine = candidateLine;
 				continue;
@@ -45,7 +45,7 @@ function wrapPictureText(text, maxWidth, measureText) {
 	return wrappedLines;
 }
 function truncatePictureText(lines, maxLines, maxWidth, measureText) {
-	let truncatedLines = lines.slice(0, maxLines);
+	const truncatedLines = lines.slice(0, maxLines);
 	let lastLineCharacters = [...truncatedLines[maxLines - 1]];
 	while (
 		lastLineCharacters.length &&
@@ -57,16 +57,20 @@ function truncatePictureText(lines, maxLines, maxWidth, measureText) {
 	return truncatedLines;
 }
 function fitPictureText(text, box, measureText) {
-	let smallestSize = pictureFontSizes[pictureFontSizes.length - 1];
-	for (let fontSize of pictureFontSizes) {
-		let maxRows = Math.floor(box.height / (fontSize * pictureLineHeight));
-		let maxLineWidth = box.width / fontSize;
-		let wrappedLines = wrapPictureText(text.trim(), maxLineWidth, measureText);
-		let fitsAllLines = wrappedLines.length <= maxRows;
+	const smallestSize = pictureFontSizes[pictureFontSizes.length - 1];
+	for (const fontSize of pictureFontSizes) {
+		const maxRows = Math.floor(box.height / (fontSize * pictureLineHeight));
+		const maxLineWidth = box.width / fontSize;
+		const wrappedLines = wrapPictureText(
+			text.trim(),
+			maxLineWidth,
+			measureText,
+		);
+		const fitsAllLines = wrappedLines.length <= maxRows;
 		if (!fitsAllLines && fontSize !== smallestSize) {
 			continue;
 		}
-		let visibleLines = fitsAllLines
+		const visibleLines = fitsAllLines
 			? wrappedLines
 			: truncatePictureText(wrappedLines, maxRows, maxLineWidth, measureText);
 		return {
@@ -95,7 +99,7 @@ var pictureRuleWidth = 3;
 var pictureGridWidth = 4;
 var pictureLineSpacing = 100;
 function pictureFonts() {
-	let computedStyle = getComputedStyle(document.documentElement);
+	const computedStyle = getComputedStyle(document.documentElement);
 	return {
 		display: computedStyle.getPropertyValue(`--font-display`).trim(),
 		sans: computedStyle.getPropertyValue(`--font-sans`).trim(),
@@ -111,24 +115,24 @@ function paintWordmark(
 ) {
 	context.font = `900 expanded ${fontSize}px ${displayFont}`;
 	context.fillStyle = paperStyle.type;
-	let { fontBoundingBoxAscent: ascent, fontBoundingBoxDescent: descent } =
+	const { fontBoundingBoxAscent: ascent, fontBoundingBoxDescent: descent } =
 		context.measureText(`duc`);
-	for (let character of `duc`) {
+	for (const character of `duc`) {
 		context.fillText(character, x, baseline);
 		x +=
 			context.measureText(character).width + wordmarkShape.tracking * fontSize;
 	}
-	let textBottom = baseline + descent + (fontSize - ascent - descent) / 2;
-	let { hand: handShape, viewBox, paths } = wordmarkShape;
-	let handScale = Math.min(
+	const textBottom = baseline + descent + (fontSize - ascent - descent) / 2;
+	const { hand: handShape, viewBox, paths } = wordmarkShape;
+	const handScale = Math.min(
 		(handShape.width * fontSize) / viewBox.width,
 		(handShape.height * fontSize) / viewBox.height,
 	);
-	let handX =
+	const handX =
 		x +
 		handShape.before * fontSize +
 		(handShape.width * fontSize - viewBox.width * handScale) / 2;
-	let handY =
+	const handY =
 		textBottom -
 		(handShape.lift + handShape.height) * fontSize +
 		(handShape.height * fontSize - viewBox.height * handScale) / 2;
@@ -139,7 +143,7 @@ function paintWordmark(
 	);
 	context.scale(handScale, handScale);
 	context.fillStyle = paperStyle.hand;
-	for (let pathData of paths) {
+	for (const pathData of paths) {
 		context.fill(new Path2D(pathData));
 	}
 	context.restore();
@@ -162,9 +166,9 @@ function paintRuling(context, ruling, paperStyle, layout, baselineFor) {
 		context.globalAlpha = 1;
 		return;
 	}
-	let gridSpacing = (layout.size * pictureLineHeight) / pictureGridWidth;
-	let gridBottom = baselineFor(layout.rows - 1) + gridSpacing;
-	let horizontalPositions = [];
+	const gridSpacing = (layout.size * pictureLineHeight) / pictureGridWidth;
+	const gridBottom = baselineFor(layout.rows - 1) + gridSpacing;
+	const horizontalPositions = [];
 	for (
 		let gridY = baselineFor(0) % gridSpacing;
 		gridY <= gridBottom + 0.5;
@@ -172,7 +176,7 @@ function paintRuling(context, ruling, paperStyle, layout, baselineFor) {
 	) {
 		horizontalPositions.push(Math.round(gridY));
 	}
-	let verticalPositions = [];
+	const verticalPositions = [];
 	for (
 		let gridX = pictureTextBox.x % gridSpacing;
 		gridX < pictureSize;
@@ -182,18 +186,18 @@ function paintRuling(context, ruling, paperStyle, layout, baselineFor) {
 	}
 	if (ruling === `grid`) {
 		context.globalAlpha = paperStyle.rule * 0.75;
-		for (let lineY of horizontalPositions) {
+		for (const lineY of horizontalPositions) {
 			context.fillRect(0, lineY - 1, pictureSize, 2);
 		}
-		for (let lineX of verticalPositions) {
+		for (const lineX of verticalPositions) {
 			context.fillRect(lineX - 1, 0, 2, gridBottom);
 		}
 	} else {
 		context.globalAlpha = Math.min(1, paperStyle.rule * 1.6);
-		let dotRadius = Math.max(3, gridSpacing / 15);
+		const dotRadius = Math.max(3, gridSpacing / 15);
 		context.beginPath();
-		for (let dotY of horizontalPositions) {
-			for (let dotX of verticalPositions) {
+		for (const dotY of horizontalPositions) {
+			for (const dotX of verticalPositions) {
 				context.moveTo(dotX + dotRadius, dotY);
 				context.arc(dotX, dotY, dotRadius, 0, Math.PI * 2);
 			}
@@ -213,27 +217,27 @@ function paintPicture(
 		style: pictureStyle,
 	},
 ) {
-	let context = canvas.getContext(`2d`);
+	const context = canvas.getContext(`2d`);
 	if (!context) {
 		return;
 	}
-	let paperStyle = paperStyleFor(pictureStyle.paper);
-	let fonts = pictureFonts();
-	let canvasScale = canvas.width / pictureSize;
+	const paperStyle = paperStyleFor(pictureStyle.paper);
+	const fonts = pictureFonts();
+	const canvasScale = canvas.width / pictureSize;
 	context.setTransform(canvasScale, 0, 0, canvasScale, 0, 0);
-	let handwritingFont = fontFamily
+	const handwritingFont = fontFamily
 		? `"${fontFamily}", ${fonts.display}`
 		: fonts.display;
-	let fontForRun = (run, fontSize) =>
+	const fontForRun = (run, fontSize) =>
 		run.hand
 			? `${fontSize}px ${handwritingFont}`
 			: `400 ${(fontSize * run.scale).toFixed(2)}px ${fonts.display}`;
-	let measurements = new Map();
-	let measureText = (measuredText) => {
+	const measurements = new Map();
+	const measureText = (measuredText) => {
 		let measuredWidth = measurements.get(measuredText);
 		if (measuredWidth === undefined) {
 			measuredWidth = 0;
-			for (let measuredRun of textRuns(measuredText, isDrawn, guideLines)) {
+			for (const measuredRun of textRuns(measuredText, isDrawn, guideLines)) {
 				context.font = fontForRun(measuredRun, pictureLineSpacing);
 				measuredWidth +=
 					context.measureText(measuredRun.text).width / pictureLineSpacing;
@@ -247,18 +251,18 @@ function paintPicture(
 	context.textBaseline = `alphabetic`;
 	context.fillStyle = paperStyle.ground;
 	context.fillRect(0, 0, pictureSize, pictureSize);
-	let layout = fitPictureText(text, pictureTextBox, measureText);
-	let lineHeight = layout.size * pictureLineHeight;
-	let textTop =
+	const layout = fitPictureText(text, pictureTextBox, measureText);
+	const lineHeight = layout.size * pictureLineHeight;
+	const textTop =
 		pictureTextBox.y + (pictureTextBox.height - layout.rows * lineHeight) / 2;
-	let baselineFor = (rowIndex) =>
+	const baselineFor = (rowIndex) =>
 		Math.round(
 			textTop + rowIndex * lineHeight + layout.size * pictureFontScale,
 		);
 	paintRuling(context, pictureStyle.ruling, paperStyle, layout, baselineFor);
 	layout.lines.forEach((lineText, lineIndex) => {
 		let textX = pictureTextBox.x;
-		for (let paintedRun of textRuns(lineText, isDrawn, guideLines)) {
+		for (const paintedRun of textRuns(lineText, isDrawn, guideLines)) {
 			context.font = fontForRun(paintedRun, layout.size);
 			context.fillStyle = paintedRun.hand ? paperStyle.hand : paperStyle.type;
 			context.globalAlpha = paintedRun.hand ? 1 : pictureOpacity;
@@ -291,7 +295,7 @@ function paintPicture(
 	context.globalAlpha = 1;
 }
 function pictureBlob(picture, fileName) {
-	let canvas = document.createElement(`canvas`);
+	const canvas = document.createElement(`canvas`);
 	canvas.width = canvas.height = pictureSize;
 	paintPicture(canvas, picture);
 	return new Promise((resolve, reject) =>

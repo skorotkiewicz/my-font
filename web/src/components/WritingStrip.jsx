@@ -20,9 +20,10 @@ var stagePercent = (stageUnits) =>
 	`${((stageUnits / stageHeight) * 100).toFixed(3)}%`;
 var stagePixels = (stageUnits) => `calc(var(--u) * ${stageUnits.toFixed(0)})`;
 function WrittenNeighbour({ strokes, ink: bounds, place: placement }) {
-	let inkWidth = Math.max(1, (bounds.xMax - bounds.xMin) * placement.scale);
+	const inkWidth = Math.max(1, (bounds.xMax - bounds.xMin) * placement.scale);
 	return (
 		<svg
+			aria-hidden={true}
 			viewBox={`0 0 ${inkWidth.toFixed(0)} ${stageHeight}`}
 			className="block h-full shrink-0 fill-hand"
 			style={{
@@ -53,16 +54,19 @@ function PlaceholderNeighbour({ char: character, lines }) {
 			<span className="invisible block h-0 leading-none whitespace-pre">
 				{character}
 			</span>
-			<svg className="absolute inset-0 size-full overflow-visible fill-placeholder">
+			<svg
+				aria-hidden={true}
+				className="absolute inset-0 size-full overflow-visible fill-placeholder"
+			>
 				<text y={stagePercent(stageYFor(0))}>{character}</text>
 			</svg>
 		</span>
 	);
 }
 function TapeNeighbours({ cps: codepoints, side }) {
-	let { state, actions } = useWrite();
-	let { project, alignment } = state;
-	let tapeOffset = `calc(50% + var(--tape-slot) / 2 + ${stagePixels(neighbourOffset)})`;
+	const { state, actions } = useWrite();
+	const { project, alignment } = state;
+	const tapeOffset = `calc(50% + var(--tape-slot) / 2 + ${stagePixels(neighbourOffset)})`;
 	return (
 		<div
 			aria-hidden={true}
@@ -73,11 +77,11 @@ function TapeNeighbours({ cps: codepoints, side }) {
 			}}
 		>
 			{codepoints.map((glyphCodepoint) => {
-				let drawing = project.glyphs[glyphCodepoint]?.drawings[0];
-				let glyphInk = drawing?.strokes.length
+				const drawing = project.glyphs[glyphCodepoint]?.drawings[0];
+				const glyphInk = drawing?.strokes.length
 					? inkBounds(glyphCodepoint, drawing)
 					: null;
-				let glyphPlacement = alignment.place.get(glyphCodepoint);
+				const glyphPlacement = alignment.place.get(glyphCodepoint);
 				return (
 					<button
 						type="button"
@@ -122,9 +126,9 @@ function DrawingPrompt({ cp: codepoint, zone }) {
 	);
 }
 function GlyphPicker() {
-	let { state, actions } = useWrite();
-	let { cp: codepoint, set: characterSet } = state;
-	let glyphOrdinal = characterSet.codepoints.indexOf(codepoint) + 1;
+	const { state, actions } = useWrite();
+	const { cp: codepoint, set: characterSet } = state;
+	const glyphOrdinal = characterSet.codepoints.indexOf(codepoint) + 1;
 	return (
 		<div className="flex shrink-0 items-center justify-between gap-3 px-5 pb-3 compact:px-4 short-landscape:pt-2 md:mx-auto md:w-(--tape-stage) md:px-0 lg:pb-2">
 			<div className="flex min-w-0 items-center gap-3 lg:gap-3.5">
@@ -161,21 +165,21 @@ function GlyphPicker() {
 	);
 }
 function WritingStrip() {
-	let { state, actions } = useWrite();
-	let { cp: codepoint, strokes, status, drawn, arrival } = state;
-	let zone = zoneForCharacter(characterFor(codepoint));
-	let [hasStartedDrawing, setHasStartedDrawing] = React.useState(false);
-	let codepointIndex = allCodepoints.indexOf(codepoint);
-	let previousCodepoints = allCodepoints
+	const { state, actions } = useWrite();
+	const { cp: codepoint, strokes, status, drawn, arrival } = state;
+	const zone = zoneForCharacter(characterFor(codepoint));
+	const [hasStartedDrawing, setHasStartedDrawing] = React.useState(false);
+	const codepointIndex = allCodepoints.indexOf(codepoint);
+	const previousCodepoints = allCodepoints
 		.slice(Math.max(0, codepointIndex - neighbourCount), codepointIndex)
 		.reverse();
-	let nextCodepoints = allCodepoints.slice(
+	const nextCodepoints = allCodepoints.slice(
 		codepointIndex + 1,
 		codepointIndex + 1 + neighbourCount,
 	);
-	let shouldAnimateArrival =
+	const shouldAnimateArrival =
 		arrival.by === `press` && arrival.from !== undefined;
-	let isForwardArrival =
+	const isForwardArrival =
 		shouldAnimateArrival &&
 		allCodepoints.indexOf(arrival.from) < codepointIndex;
 	return (

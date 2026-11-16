@@ -11,11 +11,13 @@ function placeholderScale(character, lines) {
 	}
 }
 function textRuns(text, hasDrawing, lines, shrink = 1) {
-	let runs = [];
-	for (let character of text) {
-		let isHandwritten = character === ` ` || hasDrawing(character);
-		let scale = isHandwritten ? 1 : placeholderScale(character, lines) * shrink;
-		let previousRun = runs[runs.length - 1];
+	const runs = [];
+	for (const character of text) {
+		const isHandwritten = character === ` ` || hasDrawing(character);
+		const scale = isHandwritten
+			? 1
+			: placeholderScale(character, lines) * shrink;
+		const previousRun = runs[runs.length - 1];
 		if (
 			previousRun &&
 			previousRun.hand === isHandwritten &&
@@ -33,7 +35,7 @@ function textRuns(text, hasDrawing, lines, shrink = 1) {
 	return runs;
 }
 function useTextStyle() {
-	let { state } = useWrite();
+	const { state } = useWrite();
 	if (state.font) {
 		return `"${state.font.family}", var(--font-display)`;
 	} else {
@@ -41,9 +43,9 @@ function useTextStyle() {
 	}
 }
 function LiveText({ text, className, shrink = 1 }) {
-	let { state } = useWrite();
-	let fontFamily = useTextStyle();
-	let runs = textRuns(
+	const { state } = useWrite();
+	const fontFamily = useTextStyle();
+	const runs = textRuns(
 		text,
 		(character) => state.drawn.has(character.charCodeAt(0)),
 		state.alignment.lines,
@@ -60,7 +62,10 @@ function LiveText({ text, className, shrink = 1 }) {
 							style={{
 								fontFamily: fontFamily,
 							}}
-							key={runIndex}
+							key={
+								// biome-ignore lint/suspicious/noArrayIndexKey: Runs render stateless spans, so reusing a position cannot transfer component state.
+								runIndex
+							}
 						>
 							{run.text}
 						</span>
@@ -70,7 +75,10 @@ function LiveText({ text, className, shrink = 1 }) {
 							style={{
 								fontSize: `${run.scale.toFixed(3)}em`,
 							}}
-							key={runIndex}
+							key={
+								// biome-ignore lint/suspicious/noArrayIndexKey: Runs render stateless spans, so reusing a position cannot transfer component state.
+								runIndex
+							}
 						>
 							{run.text}
 						</span>

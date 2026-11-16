@@ -15,21 +15,21 @@ var sha256Constants = new Uint32Array([
 var rotateRight = (word, bitCount) =>
 	(word >>> bitCount) | (word << (32 - bitCount));
 function sha256(inputBytes) {
-	let bitLength = inputBytes.length * 8;
-	let paddedBytes = new Uint8Array(((inputBytes.length + 9 + 63) >> 6) << 6);
+	const bitLength = inputBytes.length * 8;
+	const paddedBytes = new Uint8Array(((inputBytes.length + 9 + 63) >> 6) << 6);
 	paddedBytes.set(inputBytes);
 	paddedBytes[inputBytes.length] = 128;
-	let paddedView = new DataView(paddedBytes.buffer);
+	const paddedView = new DataView(paddedBytes.buffer);
 	paddedView.setUint32(
 		paddedBytes.length - 8,
 		Math.floor(bitLength / 4294967296),
 	);
 	paddedView.setUint32(paddedBytes.length - 4, bitLength >>> 0);
-	let hashState = new Uint32Array([
+	const hashState = new Uint32Array([
 		1779033703, 3144134277, 1013904242, 2773480762, 1359893119, 2600822924,
 		528734635, 1541459225,
 	]);
-	let schedule = new Uint32Array(64);
+	const schedule = new Uint32Array(64);
 	for (
 		let blockOffset = 0;
 		blockOffset < paddedBytes.length;
@@ -45,11 +45,11 @@ function sha256(inputBytes) {
 			expandedWordIndex < 64;
 			expandedWordIndex++
 		) {
-			let smallSigmaZero =
+			const smallSigmaZero =
 				rotateRight(schedule[expandedWordIndex - 15], 7) ^
 				rotateRight(schedule[expandedWordIndex - 15], 18) ^
 				(schedule[expandedWordIndex - 15] >>> 3);
-			let smallSigmaOne =
+			const smallSigmaOne =
 				rotateRight(schedule[expandedWordIndex - 2], 17) ^
 				rotateRight(schedule[expandedWordIndex - 2], 19) ^
 				(schedule[expandedWordIndex - 2] >>> 10);
@@ -62,7 +62,7 @@ function sha256(inputBytes) {
 		let [stateA, stateB, stateC, stateD, stateE, stateF, stateG, stateH] =
 			hashState;
 		for (let roundIndex = 0; roundIndex < 64; roundIndex++) {
-			let firstTemporary =
+			const firstTemporary =
 				stateH +
 				(rotateRight(stateE, 6) ^
 					rotateRight(stateE, 11) ^
@@ -70,7 +70,7 @@ function sha256(inputBytes) {
 				((stateE & stateF) ^ (~stateE & stateG)) +
 				sha256Constants[roundIndex] +
 				schedule[roundIndex];
-			let secondTemporary =
+			const secondTemporary =
 				(rotateRight(stateA, 2) ^
 					rotateRight(stateA, 13) ^
 					rotateRight(stateA, 22)) +
@@ -93,11 +93,11 @@ function sha256(inputBytes) {
 		hashState[6] += stateG;
 		hashState[7] += stateH;
 	}
-	let digestBytes = new Uint8Array(32);
-	let digestView = new DataView(digestBytes.buffer);
-	hashState.forEach((hashWord, hashWordIndex) =>
-		digestView.setUint32(hashWordIndex * 4, hashWord),
-	);
+	const digestBytes = new Uint8Array(32);
+	const digestView = new DataView(digestBytes.buffer);
+	hashState.forEach((hashWord, hashWordIndex) => {
+		digestView.setUint32(hashWordIndex * 4, hashWord);
+	});
 	return digestBytes;
 }
 var projectTableTag = `DUCT`;
@@ -115,20 +115,20 @@ var readTag = (fontBytes, offset) =>
 		fontBytes[offset + 3],
 	);
 function readFontTables(fontBytes) {
-	let fontView = new DataView(
+	const fontView = new DataView(
 		fontBytes.buffer,
 		fontBytes.byteOffset,
 		fontBytes.byteLength,
 	);
-	let tableCount = fontView.getUint16(4);
+	const tableCount = fontView.getUint16(4);
 	if (!tableCount || 12 + tableCount * 16 > fontBytes.length) {
 		return;
 	}
-	let tables = new Map();
+	const tables = new Map();
 	for (let tableIndex = 0; tableIndex < tableCount; tableIndex++) {
-		let recordOffset = 12 + tableIndex * 16;
-		let tableOffset = fontView.getUint32(recordOffset + 8);
-		let tableLength = fontView.getUint32(recordOffset + 12);
+		const recordOffset = 12 + tableIndex * 16;
+		const tableOffset = fontView.getUint32(recordOffset + 8);
+		const tableLength = fontView.getUint32(recordOffset + 12);
 		if (tableOffset + tableLength <= fontBytes.length) {
 			tables.set(readTag(fontBytes, recordOffset), {
 				offset: tableOffset,
@@ -142,20 +142,20 @@ function fontDescription(fontBytes, nameTable) {
 	if (!nameTable || nameTable.length < 6) {
 		return;
 	}
-	let nameView = new DataView(
+	const nameView = new DataView(
 		fontBytes.buffer,
 		fontBytes.byteOffset + nameTable.offset,
 		nameTable.length,
 	);
-	let recordCount = nameView.getUint16(2);
-	let stringsOffset = nameView.getUint16(4);
+	const recordCount = nameView.getUint16(2);
+	const stringsOffset = nameView.getUint16(4);
 	if (!(6 + recordCount * 12 > nameTable.length)) {
 		for (let recordIndex = 0; recordIndex < recordCount; recordIndex++) {
-			let recordOffset = 6 + recordIndex * 12;
-			let [platformId, , , nameId, stringLength, stringOffset] = [
+			const recordOffset = 6 + recordIndex * 12;
+			const [platformId, , , nameId, stringLength, stringOffset] = [
 				0, 2, 4, 6, 8, 10,
 			].map((fieldOffset) => nameView.getUint16(recordOffset + fieldOffset));
-			let stringStart = stringsOffset + stringOffset;
+			const stringStart = stringsOffset + stringOffset;
 			if (
 				nameId !== 8 ||
 				stringStart + stringLength > nameTable.length ||
@@ -163,7 +163,7 @@ function fontDescription(fontBytes, nameTable) {
 			) {
 				continue;
 			}
-			let stringBytes = new Uint8Array(
+			const stringBytes = new Uint8Array(
 				fontBytes.buffer,
 				fontBytes.byteOffset + nameTable.offset + stringStart,
 				stringLength,
@@ -174,7 +174,7 @@ function fontDescription(fontBytes, nameTable) {
 						{
 							length: stringLength >> 1,
 						},
-						(unusedElement, characterIndex) =>
+						(_unusedElement, characterIndex) =>
 							(stringBytes[characterIndex * 2] << 8) |
 							stringBytes[characterIndex * 2 + 1],
 					),
@@ -187,14 +187,14 @@ function fontDescription(fontBytes, nameTable) {
 	}
 }
 async function inflateProject(compressedBytes, maxBytes) {
-	let reader = new Blob([compressedBytes])
+	const reader = new Blob([compressedBytes])
 		.stream()
 		.pipeThrough(new DecompressionStream(`deflate-raw`))
 		.getReader();
-	let chunks = [];
+	const chunks = [];
 	let totalBytes = 0;
 	while (true) {
-		let { done, value: chunk } = await reader.read();
+		const { done, value: chunk } = await reader.read();
 		if (done) {
 			break;
 		}
@@ -205,9 +205,9 @@ async function inflateProject(compressedBytes, maxBytes) {
 		}
 		chunks.push(chunk);
 	}
-	let inflatedBytes = new Uint8Array(totalBytes);
+	const inflatedBytes = new Uint8Array(totalBytes);
 	let writeOffset = 0;
-	for (let sourceChunk of chunks) {
+	for (const sourceChunk of chunks) {
 		inflatedBytes.set(sourceChunk, writeOffset);
 		writeOffset += sourceChunk.length;
 	}
@@ -217,15 +217,15 @@ var equalBytes = (leftBytes, rightBytes) =>
 	leftBytes.length === rightBytes.length &&
 	leftBytes.every((byte, byteIndex) => byte === rightBytes[byteIndex]);
 async function readProjectFont(fontBuffer) {
-	let refuse = (reason) => ({
+	const refuse = (reason) => ({
 		ok: false,
 		reason: reason,
 	});
-	let fontBytes = new Uint8Array(fontBuffer);
+	const fontBytes = new Uint8Array(fontBuffer);
 	if (fontBytes.length < 12 || fontBytes.length > 16777216) {
 		return refuse(`not-font`);
 	}
-	let signature = readTag(fontBytes, 0);
+	const signature = readTag(fontBytes, 0);
 	if (signature === `wOFF` || signature === `wOF2`) {
 		return refuse(`website`);
 	}
@@ -235,11 +235,11 @@ async function readProjectFont(fontBuffer) {
 	if (signature !== `OTTO` && signature !== `true` && signature !== `\0\0\0`) {
 		return refuse(`not-font`);
 	}
-	let tables = readFontTables(fontBytes);
+	const tables = readFontTables(fontBytes);
 	if (!tables) {
 		return refuse(`not-font`);
 	}
-	let projectTable = tables.get(projectTableTag);
+	const projectTable = tables.get(projectTableTag);
 	if (!projectTable) {
 		return refuse(
 			fontDescription(fontBytes, tables.get(`name`))?.startsWith(
@@ -256,7 +256,7 @@ async function readProjectFont(fontBuffer) {
 		) {
 			return refuse(`damaged`);
 		}
-		let projectView = new DataView(
+		const projectView = new DataView(
 			fontBytes.buffer,
 			projectTable.offset,
 			projectTable.length,
@@ -264,11 +264,11 @@ async function readProjectFont(fontBuffer) {
 		if (projectView.getUint16(4) > projectFormatVersion) {
 			return refuse(`newer`);
 		}
-		let compressedLength = projectView.getUint32(8);
+		const compressedLength = projectView.getUint32(8);
 		if (compressedLength !== projectTable.length - projectHeaderSize) {
 			return refuse(`damaged`);
 		}
-		let compressedBytes = fontBytes.slice(
+		const compressedBytes = fontBytes.slice(
 			projectTable.offset + projectHeaderSize,
 			projectTable.offset + projectHeaderSize + compressedLength,
 		);
@@ -283,10 +283,10 @@ async function readProjectFont(fontBuffer) {
 		) {
 			return refuse(`damaged`);
 		}
-		let projectJson = new TextDecoder(`utf-8`, {
+		const projectJson = new TextDecoder(`utf-8`, {
 			fatal: true,
 		}).decode(await inflateProject(compressedBytes, maxInflatedBytes));
-		let payload = JSON.parse(projectJson);
+		const payload = JSON.parse(projectJson);
 		if (!isRecord(payload) || !isFiniteNumber(payload.exportedAt)) {
 			return refuse(`damaged`);
 		} else if (
@@ -308,9 +308,9 @@ async function readProjectFont(fontBuffer) {
 }
 var InvalidProjectError = class extends Error {};
 var isRecord = (candidate) =>
-	typeof candidate == `object` && !!candidate && !Array.isArray(candidate);
+	typeof candidate === `object` && !!candidate && !Array.isArray(candidate);
 var isFiniteNumber = (candidate) =>
-	typeof candidate == `number` && Number.isFinite(candidate);
+	typeof candidate === `number` && Number.isFinite(candidate);
 function assertProject(condition) {
 	if (!condition) {
 		throw new InvalidProjectError();
@@ -323,7 +323,7 @@ function boundedNumber(candidate, minimum, maximum) {
 	return candidate;
 }
 function boundedString(candidate, maxLength) {
-	assertProject(typeof candidate == `string` && candidate.length <= maxLength);
+	assertProject(typeof candidate === `string` && candidate.length <= maxLength);
 	return candidate;
 }
 function boundedArray(candidate, maxLength, minLength = 0) {
@@ -339,15 +339,15 @@ var supportedInputs = [`pen`, `touch`, `mouse`];
 var maxStrokes = 100000;
 function validateProject(project) {
 	assertProject(isRecord(project) && project.schemaVersion === 1);
-	let settings = project.settings;
+	const settings = project.settings;
 	assertProject(isRecord(settings));
 	assertProject(isRecord(project.glyphs));
-	let glyphEntries = Object.entries(project.glyphs);
+	const glyphEntries = Object.entries(project.glyphs);
 	assertProject(glyphEntries.length <= supportedCodepoints.size);
 	let totalPoints = 0;
-	let validatedGlyphs = {};
-	for (let [glyphKey, glyph] of glyphEntries) {
-		let glyphCodepoint = Number(glyphKey);
+	const validatedGlyphs = {};
+	for (const [glyphKey, glyph] of glyphEntries) {
+		const glyphCodepoint = Number(glyphKey);
 		assertProject(
 			supportedCodepoints.has(glyphCodepoint) &&
 				isRecord(glyph) &&
@@ -357,12 +357,12 @@ function validateProject(project) {
 			cp: glyphCodepoint,
 			drawings: boundedArray(glyph.drawings, 8).map((drawing) => {
 				assertProject(isRecord(drawing) && isRecord(drawing.fix));
-				let validatedStrokes = boundedArray(drawing.strokes, 500).map(
+				const validatedStrokes = boundedArray(drawing.strokes, 500).map(
 					(stroke) => {
 						assertProject(
 							isRecord(stroke) && supportedInputs.includes(stroke.input),
 						);
-						let validatedPoints = boundedArray(stroke.pts, 20000, 1).map(
+						const validatedPoints = boundedArray(stroke.pts, 20000, 1).map(
 							(point) => {
 								assertProject(Array.isArray(point) && point.length === 3);
 								return [
@@ -403,7 +403,7 @@ function validateProject(project) {
 		glyphs: validatedGlyphs,
 		settings: {
 			tracking: boundedNumber(settings.tracking, -1000, 1000),
-			tidy: typeof settings.tidy != `boolean` || settings.tidy,
+			tidy: typeof settings.tidy !== `boolean` || settings.tidy,
 		},
 	};
 }

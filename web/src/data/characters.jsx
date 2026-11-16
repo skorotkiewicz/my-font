@@ -3,7 +3,7 @@ var codepointRange = (firstCharacter, lastCharacter) =>
 		{
 			length: lastCharacter.charCodeAt(0) - firstCharacter.charCodeAt(0) + 1,
 		},
-		(unusedElement, offset) => firstCharacter.charCodeAt(0) + offset,
+		(_unusedElement, offset) => firstCharacter.charCodeAt(0) + offset,
 	);
 var punctuationCodepoints = `.,!?'"-:;()&@#$%*/+=_<>[]{}\\|^\`~`
 	.split(``)
@@ -80,7 +80,7 @@ var punctuationLabels = {
 };
 var characterFor = (codepoint) => String.fromCharCode(codepoint);
 function describeCharacter(codepoint) {
-	let character = characterFor(codepoint);
+	const character = characterFor(codepoint);
 	if (character >= `a` && character <= `z`) {
 		return `a small ${character}`;
 	} else if (character >= `A` && character <= `Z`) {

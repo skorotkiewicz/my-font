@@ -58,8 +58,8 @@ var saveStatusContent = {
 	},
 };
 function SaveStatus({ className = `` }) {
-	let { state } = useWrite();
-	let { status, drawn } = state;
+	const { state } = useWrite();
+	const { status, drawn } = state;
 	if (status === `unsaved`) {
 		return (
 			<p
@@ -71,7 +71,7 @@ function SaveStatus({ className = `` }) {
 			</p>
 		);
 	}
-	let { icon: statusIcon, text: statusText } =
+	const { icon: statusIcon, text: statusText } =
 		saveStatusContent[
 			status === `loading` ? `loading` : drawn.size ? `saved` : `fresh`
 		];
@@ -86,8 +86,8 @@ function SaveStatus({ className = `` }) {
 	);
 }
 function AppHeader() {
-	let { state, actions } = useWrite();
-	let isEmpty = state.status !== `loading` && state.drawn.size === 0;
+	const { state, actions } = useWrite();
+	const isEmpty = state.status !== `loading` && state.drawn.size === 0;
 	return (
 		<header className="flex shrink-0 items-center justify-between gap-3 px-5 pt-[calc(env(safe-area-inset-top)+0.5rem)] compact:px-4 lg:gap-6 lg:px-20 lg:pt-8">
 			<Wordmark className="lg:text-4xl" />

@@ -5,36 +5,36 @@ var fontWorker;
 var fontRequestId = 0;
 var fontRequests = new Map();
 function getFontWorker() {
-	return (
-		fontWorker ||
-		((fontWorker = new Worker(
-			new URL(
-				"workers/font.worker.js",
-				new URL(import.meta.env.BASE_URL, location.origin),
-			),
-			{
-				type: `module`,
-			},
-		)),
-		(fontWorker.onmessage = ({ data: response }) => {
-			let pendingRequest = fontRequests.get(response.id);
-			fontRequests.delete(response.id);
-			if (pendingRequest) {
-				if (response.ok) {
-					pendingRequest.resolve({
-						buffer: response.buffer,
-						ms: response.ms,
-					});
-				} else {
-					pendingRequest.reject(Error(response.error));
-				}
-			}
-		}),
-		fontWorker)
+	if (fontWorker) {
+		return fontWorker;
+	}
+	fontWorker = new Worker(
+		new URL(
+			"workers/font.worker.js",
+			new URL(import.meta.env.BASE_URL, location.origin),
+		),
+		{
+			type: `module`,
+		},
 	);
+	fontWorker.onmessage = ({ data: response }) => {
+		const pendingRequest = fontRequests.get(response.id);
+		fontRequests.delete(response.id);
+		if (pendingRequest) {
+			if (response.ok) {
+				pendingRequest.resolve({
+					buffer: response.buffer,
+					ms: response.ms,
+				});
+			} else {
+				pendingRequest.reject(Error(response.error));
+			}
+		}
+	};
+	return fontWorker;
 }
 function requestFont(request, transferables = []) {
-	let requestId = fontRequestId++;
+	const requestId = fontRequestId++;
 	return new Promise((resolve, reject) => {
 		fontRequests.set(requestId, {
 			resolve: resolve,
@@ -65,7 +65,7 @@ var buildProjectFont = (project, { place: placements, lines: guideLines }) =>
 		})),
 	});
 var convertWoff2 = (otfBuffer) => {
-	let transferableOtf = otfBuffer.slice(0);
+	const transferableOtf = otfBuffer.slice(0);
 	return requestFont(
 		{
 			type: `woff2`,
@@ -75,7 +75,7 @@ var convertWoff2 = (otfBuffer) => {
 	);
 };
 var packProjectFont = (otfBuffer, project) => {
-	let transferableOtf = otfBuffer.slice(0);
+	const transferableOtf = otfBuffer.slice(0);
 	return requestFont(
 		{
 			type: `pack`,

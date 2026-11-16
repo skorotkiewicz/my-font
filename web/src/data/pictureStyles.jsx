@@ -74,8 +74,8 @@ var defaultPictureStyle = {
 var paperStyleFor = (paperId) =>
 	paperStyles.find((paperStyle) => paperStyle.id === paperId) ?? paperStyles[0];
 function normalizePictureStyle(style) {
-	let { paper: paperId, ruling: rulingId } =
-		typeof style == `object` && style ? style : {};
+	const { paper: paperId, ruling: rulingId } =
+		typeof style === `object` && style ? style : {};
 	return {
 		paper:
 			paperStyles.find((paperStyle) => paperStyle.id === paperId)?.id ??

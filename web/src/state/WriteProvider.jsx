@@ -11,7 +11,7 @@ import { loadPictureStyle, savePictureStyle } from "../lib/storage.jsx";
 import { useProject } from "../hooks/useProject.jsx";
 var WriteContext = React.createContext(null);
 function useWrite() {
-	let context = React.use(WriteContext);
+	const context = React.use(WriteContext);
 	if (!context) {
 		throw Error(`useWrite must be used inside <WriteProvider>`);
 	}
@@ -38,22 +38,22 @@ var firstUnwritten = (sourceProject) =>
 			!strokesFor(sourceProject, candidateCodepoint).length,
 	) ?? allCodepoints[0];
 function WriteProvider({ children }) {
-	let [codepoint, setCodepoint] = React.useState(allCodepoints[0]);
-	let [arrival, setArrival] = React.useState({
+	const [codepoint, setCodepoint] = React.useState(allCodepoints[0]);
+	const [arrival, setArrival] = React.useState({
 		from: undefined,
 		by: `jump`,
 	});
-	let { project, setProject, status } = useProject(
+	const { project, setProject, status } = useProject(
 		emptyProject,
 		(loadedProject) => setCodepoint(firstUnwritten(loadedProject)),
 	);
-	let [history, setHistory] = React.useState({});
-	let [font, setFont] = React.useState();
-	let [sheet, setSheet] = React.useState();
-	let [picked, setPicked] = React.useState();
-	let [opening, setOpening] = React.useState();
-	let [picture, setPicture] = React.useState(defaultPictureStyle);
-	let fileInput = React.useRef(null);
+	const [history, setHistory] = React.useState({});
+	const [font, setFont] = React.useState();
+	const [sheet, setSheet] = React.useState();
+	const [picked, setPicked] = React.useState();
+	const [opening, setOpening] = React.useState();
+	const [picture, setPicture] = React.useState(defaultPictureStyle);
+	const fileInput = React.useRef(null);
 	React.useEffect(() => {
 		let active = true;
 		loadPictureStyle().then(
@@ -63,8 +63,8 @@ function WriteProvider({ children }) {
 			active = false;
 		};
 	}, []);
-	let alignment = React.useMemo(() => alignProject(project), [project]);
-	let drawn = React.useMemo(
+	const alignment = React.useMemo(() => alignProject(project), [project]);
+	const drawn = React.useMemo(
 		() =>
 			new Set(
 				allCodepoints.filter(
@@ -74,19 +74,19 @@ function WriteProvider({ children }) {
 			),
 		[project],
 	);
-	let glyphIndex = allCodepoints.indexOf(codepoint);
-	let previousCodepoint = allCodepoints[glyphIndex - 1];
-	let nextCodepoint = allCodepoints[glyphIndex + 1];
-	let strokes = strokesFor(project, codepoint);
-	let undoHistory = history[codepoint] ?? [];
-	let neighbourFor = (neighbourCodepoint) =>
+	const glyphIndex = allCodepoints.indexOf(codepoint);
+	const previousCodepoint = allCodepoints[glyphIndex - 1];
+	const nextCodepoint = allCodepoints[glyphIndex + 1];
+	const strokes = strokesFor(project, codepoint);
+	const undoHistory = history[codepoint] ?? [];
+	const neighbourFor = (neighbourCodepoint) =>
 		neighbourCodepoint === undefined
 			? undefined
 			: {
 					strokes: strokesFor(project, neighbourCodepoint),
 					place: alignment.place.get(neighbourCodepoint),
 				};
-	let neighbours = {
+	const neighbours = {
 		before: neighbourFor(
 			allCodepoints
 				.slice(0, glyphIndex)
@@ -98,13 +98,13 @@ function WriteProvider({ children }) {
 				.find((candidateCodepoint) => drawn.has(candidateCodepoint)),
 		),
 	};
-	let replaceStrokes = (nextStrokes) =>
+	const replaceStrokes = (nextStrokes) =>
 		setProject((project2) => {
-			let currentDrawing = project2.glyphs[codepoint]?.drawings[0];
-			let drawingFix = currentDrawing?.strokes.length
+			const currentDrawing = project2.glyphs[codepoint]?.drawings[0];
+			const drawingFix = currentDrawing?.strokes.length
 				? currentDrawing.fix
 				: defaultFix;
-			let nextDrawing = {
+			const nextDrawing = {
 				id: currentDrawing?.id ?? createId(),
 				strokes: nextStrokes,
 				fix: drawingFix,
@@ -122,25 +122,25 @@ function WriteProvider({ children }) {
 				},
 			};
 		});
-	let recordStrokes = (nextStrokes) => {
+	const recordStrokes = (nextStrokes) => {
 		setHistory((currentHistory) => ({
 			...currentHistory,
 			[codepoint]: [...(currentHistory[codepoint] ?? []), strokes],
 		}));
 		replaceStrokes(nextStrokes);
 	};
-	let replaceProject = (nextProject) => {
+	const replaceProject = (nextProject) => {
 		setProject(ensureProjectId(nextProject));
 		setHistory({});
 		setCodepoint(firstUnwritten(nextProject));
 		setPicked(undefined);
 		setSheet(undefined);
 	};
-	let openFont = async (fontFile) => {
+	const openFont = async (fontFile) => {
 		if (status === `loading`) {
 			return;
 		}
-		let importResult =
+		const importResult =
 			fontFile.size > 16777216
 				? {
 						ok: false,
@@ -173,7 +173,7 @@ function WriteProvider({ children }) {
 			setSheet(`refused`);
 		}
 	};
-	let actions = {
+	const actions = {
 		go: (targetCodepoint, arrivalMethod = `press`) => {
 			if (targetCodepoint !== undefined && targetCodepoint !== codepoint) {
 				setArrival({
@@ -196,7 +196,7 @@ function WriteProvider({ children }) {
 		clear: () => strokes.length && recordStrokes([]),
 		setFix: (glyphCodepoint, nextFix) =>
 			setProject((project2) => {
-				let currentDrawing = project2.glyphs[glyphCodepoint]?.drawings[0];
+				const currentDrawing = project2.glyphs[glyphCodepoint]?.drawings[0];
 				if (currentDrawing) {
 					return {
 						...project2,
@@ -238,7 +238,7 @@ function WriteProvider({ children }) {
 						},
 			),
 		stylePicture: (stylePatch) => {
-			let nextPicture = {
+			const nextPicture = {
 				...picture,
 				...stylePatch,
 			};
@@ -270,7 +270,7 @@ function WriteProvider({ children }) {
 		replace: () =>
 			opening?.kind === `replace` && replaceProject(opening.project),
 	};
-	let onKeyDown = React.useEffectEvent((event) => {
+	const onKeyDown = React.useEffectEvent((event) => {
 		if (
 			!(event.target instanceof HTMLTextAreaElement) &&
 			!(event.target instanceof HTMLInputElement) &&
@@ -294,15 +294,15 @@ function WriteProvider({ children }) {
 		}
 	});
 	React.useEffect(() => {
-		let handleKeyDown = (keyEvent) => onKeyDown(keyEvent);
+		const handleKeyDown = (keyEvent) => onKeyDown(keyEvent);
 		window.addEventListener(`keydown`, handleKeyDown);
 		return () => window.removeEventListener(`keydown`, handleKeyDown);
 	}, []);
 	React.useEffect(() => {
 		let active = true;
-		let buildTimer = setTimeout(async () => {
-			let { buffer: fontBuffer } = await buildProjectFont(project, alignment);
-			let fontFamily = await loadLiveFont(fontBuffer.slice(0));
+		const buildTimer = setTimeout(async () => {
+			const { buffer: fontBuffer } = await buildProjectFont(project, alignment);
+			const fontFamily = await loadLiveFont(fontBuffer.slice(0));
 			if (active) {
 				setFont({
 					otf: fontBuffer,
@@ -316,7 +316,7 @@ function WriteProvider({ children }) {
 			clearTimeout(buildTimer);
 		};
 	}, [project, alignment]);
-	let state = {
+	const state = {
 		project,
 		status,
 		cp: codepoint,
@@ -351,7 +351,7 @@ function WriteProvider({ children }) {
 				tabIndex={-1}
 				aria-hidden={true}
 				onChange={(event) => {
-					let selectedFile = event.currentTarget.files?.[0];
+					const selectedFile = event.currentTarget.files?.[0];
 					event.currentTarget.value = ``;
 					if (selectedFile) {
 						actions.openFont(selectedFile);

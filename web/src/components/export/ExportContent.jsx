@@ -42,14 +42,14 @@ var fadeVariants = {
 	},
 };
 function useExportHeight(view, reduceMotion) {
-	let boxRef = React.useRef(null);
-	let contentRef = React.useRef(null);
-	let previousHeightRef = React.useRef(undefined);
-	let animationRef = React.useRef(undefined);
-	let previousViewRef = React.useRef(view);
+	const boxRef = React.useRef(null);
+	const contentRef = React.useRef(null);
+	const previousHeightRef = React.useRef(undefined);
+	const animationRef = React.useRef(undefined);
+	const previousViewRef = React.useRef(view);
 	React.useEffect(() => {
-		let resizeObserver = new ResizeObserver(([resizeEntry]) => {
-			let measuredHeight = resizeEntry.borderBoxSize[0].blockSize;
+		const resizeObserver = new ResizeObserver(([resizeEntry]) => {
+			const measuredHeight = resizeEntry.borderBoxSize[0].blockSize;
 			if (measuredHeight > 0 && !animationRef.current) {
 				previousHeightRef.current = measuredHeight;
 			}
@@ -62,11 +62,11 @@ function useExportHeight(view, reduceMotion) {
 			return;
 		}
 		previousViewRef.current = view;
-		let boxElement = boxRef.current;
-		let fromHeight = animationRef.current
+		const boxElement = boxRef.current;
+		const fromHeight = animationRef.current
 			? boxElement.offsetHeight
 			: previousHeightRef.current;
-		let toHeight = contentRef.current.offsetHeight;
+		const toHeight = contentRef.current.offsetHeight;
 		animationRef.current?.stop();
 		animationRef.current = undefined;
 		previousHeightRef.current = toHeight;
@@ -75,7 +75,7 @@ function useExportHeight(view, reduceMotion) {
 			return;
 		}
 		boxElement.style.height = `${fromHeight}px`;
-		let heightAnimation = animate(
+		const heightAnimation = animate(
 			boxElement,
 			{
 				height: [fromHeight, toHeight],
@@ -96,8 +96,8 @@ function useExportHeight(view, reduceMotion) {
 	};
 }
 function ExportTransition({ direction, children }) {
-	let isPresent = useIsPresent();
-	let reduceMotion = useReducedMotion();
+	const isPresent = useIsPresent();
+	const reduceMotion = useReducedMotion();
 	return (
 		<motion.div
 			custom={direction}
@@ -114,15 +114,15 @@ function ExportTransition({ direction, children }) {
 }
 var defaultPreviewText = `hamburgefonstiv the quick brown fox jumps over`;
 function ExportContent({ view }) {
-	let [text, setText] = React.useState(defaultPreviewText);
-	let pictureInput = usePictureInput(text);
-	let pictureDownload = usePictureDownload(pictureInput);
-	let { box: boxRef, content: contentRef } = useExportHeight(
+	const [text, setText] = React.useState(defaultPreviewText);
+	const pictureInput = usePictureInput(text);
+	const pictureDownload = usePictureDownload(pictureInput);
+	const { box: boxRef, content: contentRef } = useExportHeight(
 		view,
 		useReducedMotion(),
 	);
-	let direction = view === `picture` ? 1 : -1;
-	let [hasOpenedPicture, setHasOpenedPicture] = React.useState(false);
+	const direction = view === `picture` ? 1 : -1;
+	const [hasOpenedPicture, setHasOpenedPicture] = React.useState(false);
 	if (view === `picture` && !hasOpenedPicture) {
 		setHasOpenedPicture(true);
 	}

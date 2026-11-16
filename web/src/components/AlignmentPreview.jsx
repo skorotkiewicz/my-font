@@ -19,7 +19,8 @@ function AlignmentPreview({
 	onPick,
 	onFix,
 }) {
-	let selectedLetterRef = React.useRef(null);
+	const selectedLetterRef = React.useRef(null);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Selection changes must scroll the newly attached letter ref into view.
 	React.useEffect(() => {
 		selectedLetterRef.current?.scrollIntoView({
 			inline: `nearest`,
@@ -28,10 +29,9 @@ function AlignmentPreview({
 	}, [pickedCodepoint]);
 	return (
 		<div className="strip-edges overflow-hidden rounded-[1.125rem] bg-(--strip-surface)">
-			<div
-				role="group"
+			<fieldset
 				aria-label="Your letters on one line"
-				className="strip-scroller flex h-36 overflow-x-auto"
+				className="strip-scroller m-0 flex h-36 min-w-0 overflow-x-auto border-0 p-0"
 			>
 				{letters.map((letter, letterIndex) => (
 					<AlignmentLetter
@@ -46,12 +46,12 @@ function AlignmentPreview({
 						key={letter.cp}
 					/>
 				))}
-			</div>
+			</fieldset>
 		</div>
 	);
 }
 function AlignmentHandle({ width }) {
-	let centerX = width / 2;
+	const centerX = width / 2;
 	return (
 		<g
 			className="stroke-(color:--accent)"
@@ -75,13 +75,13 @@ function AlignmentLetter({
 	before: previousCodepoint,
 	after: nextCodepoint,
 }) {
-	let transformRef = React.useRef(null);
-	let dragRef = React.useRef(null);
-	let character = String.fromCodePoint(glyphCodepoint);
-	let inkWidth = (bounds.xMax - bounds.xMin) * placement.scale;
-	let cellWidth = Math.max(alignmentTouchHeight, inkWidth + 110);
-	let horizontalPadding = (cellWidth - inkWidth) / 2;
-	let moveLetter = (deltaY) =>
+	const transformRef = React.useRef(null);
+	const dragRef = React.useRef(null);
+	const character = String.fromCodePoint(glyphCodepoint);
+	const inkWidth = (bounds.xMax - bounds.xMin) * placement.scale;
+	const cellWidth = Math.max(alignmentTouchHeight, inkWidth + 110);
+	const horizontalPadding = (cellWidth - inkWidth) / 2;
+	const moveLetter = (deltaY) =>
 		onFix(glyphCodepoint, {
 			...fix,
 			dy: clamp(
@@ -90,7 +90,7 @@ function AlignmentLetter({
 				adjustmentLimits.dy,
 			),
 		});
-	let handlePointerDown = (event) => {
+	const handlePointerDown = (event) => {
 		if (
 			!isPicked ||
 			dragRef.current ||
@@ -99,7 +99,7 @@ function AlignmentLetter({
 			return;
 		}
 		event.currentTarget.setPointerCapture(event.pointerId);
-		let unitsPerPixel =
+		const unitsPerPixel =
 			stageHeight / event.currentTarget.getBoundingClientRect().height;
 		dragRef.current = {
 			pointerId: event.pointerId,
@@ -108,13 +108,13 @@ function AlignmentLetter({
 			moved: 0,
 		};
 	};
-	let handlePointerMove = (event) => {
-		let event2 = dragRef.current;
+	const handlePointerMove = (event) => {
+		const event2 = dragRef.current;
 		if (!event2 || event.pointerId !== event2.pointerId) {
 			return;
 		}
-		let pointerDeltaY = event.clientY - event2.startY;
-		let adjustmentDeltaY =
+		const pointerDeltaY = event.clientY - event2.startY;
+		const adjustmentDeltaY =
 			Math.abs(pointerDeltaY) <= alignmentGap
 				? 0
 				: (pointerDeltaY - Math.sign(pointerDeltaY) * alignmentGap) *
@@ -130,8 +130,8 @@ function AlignmentLetter({
 			`translate(0 ${event2.moved.toFixed(1)})`,
 		);
 	};
-	let finishDrag = (event, shouldCommit) => {
-		let event2 = dragRef.current;
+	const finishDrag = (event, shouldCommit) => {
+		const event2 = dragRef.current;
 		if (event2 && event.pointerId === event2.pointerId) {
 			dragRef.current = null;
 			transformRef.current?.removeAttribute(`transform`);
@@ -159,7 +159,7 @@ function AlignmentLetter({
 				finishDrag(pointerCancelEvent, false)
 			}
 			onKeyDown={(event) => {
-				let neighbourCodepoint =
+				const neighbourCodepoint =
 					event.key === `ArrowLeft`
 						? previousCodepoint
 						: event.key === `ArrowRight`

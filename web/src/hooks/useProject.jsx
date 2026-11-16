@@ -2,10 +2,10 @@ import * as React from "react";
 import { ensureProjectId } from "../lib/project.jsx";
 import { loadProject, saveProject, saveDelay } from "../lib/storage.jsx";
 function useProject(initialProject, onLoad) {
-	let [project, setProject] = React.useState(initialProject);
-	let [status, setStatus] = React.useState(`loading`);
-	let loading = status === `loading`;
-	let notifyLoaded = React.useEffectEvent((loadedProject) =>
+	const [project, setProject] = React.useState(initialProject);
+	const [status, setStatus] = React.useState(`loading`);
+	const loading = status === `loading`;
+	const notifyLoaded = React.useEffectEvent((loadedProject) =>
 		onLoad?.(loadedProject),
 	);
 	React.useEffect(() => {
@@ -31,7 +31,7 @@ function useProject(initialProject, onLoad) {
 			active = false;
 		};
 	}, [initialProject]);
-	let flushProject = React.useEffectEvent(() => {
+	const flushProject = React.useEffectEvent(() => {
 		if (!loading) {
 			saveProject(project).then(
 				() => setStatus(`saved`),
@@ -39,15 +39,16 @@ function useProject(initialProject, onLoad) {
 			);
 		}
 	});
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Each project change must restart the autosave delay; flushProject reads the latest project.
 	React.useEffect(() => {
 		if (loading) {
 			return;
 		}
-		let saveTimer = setTimeout(flushProject, saveDelay);
+		const saveTimer = setTimeout(flushProject, saveDelay);
 		return () => clearTimeout(saveTimer);
 	}, [project, loading]);
 	React.useEffect(() => {
-		let handleVisibilityChange = () => {
+		const handleVisibilityChange = () => {
 			if (document.visibilityState === `hidden`) {
 				flushProject();
 			}

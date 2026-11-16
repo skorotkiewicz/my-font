@@ -21,7 +21,7 @@ var wordmarkShape = {
 	],
 };
 function Wordmark({ className }) {
-	let {
+	const {
 		x: viewBoxX,
 		y: viewBoxY,
 		width: viewBoxWidth,

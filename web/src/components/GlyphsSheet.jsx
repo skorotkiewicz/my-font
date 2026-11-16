@@ -16,7 +16,7 @@ function GlyphTile({
 	onSelect,
 	className,
 }) {
-	let tileSurface = isCurrent
+	const tileSurface = isCurrent
 		? `bg-paper [--color-hand:var(--color-carbon)] [--color-placeholder:var(--color-carbon)]`
 		: isDrawn
 			? `bg-paper/14 hover:bg-paper/20`
@@ -48,8 +48,8 @@ function GlyphCount({ written: writtenCount, total: totalCount }) {
 	);
 }
 function GlyphsSheet() {
-	let { state, actions } = useWrite();
-	let selectGlyph = (selectedCodepoint) => {
+	const { state, actions } = useWrite();
+	const selectGlyph = (selectedCodepoint) => {
 		actions.go(selectedCodepoint, `jump`);
 		actions.closeSheet();
 	};

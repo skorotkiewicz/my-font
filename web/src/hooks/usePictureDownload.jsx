@@ -4,7 +4,7 @@ import { downloadBlob } from "./useFontDownloads.jsx";
 import { pictureBlob } from "../lib/picture.jsx";
 var pictureSentDelay = 250;
 var canSharePicture = () =>
-	typeof navigator.canShare == `function` &&
+	typeof navigator.canShare === `function` &&
 	matchMedia(`(pointer: coarse)`).matches &&
 	navigator.canShare({
 		files: [
@@ -14,13 +14,13 @@ var canSharePicture = () =>
 		],
 	});
 function usePictureDownload(picture) {
-	let [supportsSharing] = React.useState(canSharePicture);
-	let [preparedPicture, setPreparedPicture] = React.useState();
-	let [sentPicture, setSentPicture] = React.useState();
-	let fileName = pictureFileName(picture.name);
+	const [supportsSharing] = React.useState(canSharePicture);
+	const [preparedPicture, setPreparedPicture] = React.useState();
+	const [sentPicture, setSentPicture] = React.useState();
+	const fileName = pictureFileName(picture.name);
 	React.useEffect(() => {
 		let active = true;
-		let preparationTimer = setTimeout(() => {
+		const preparationTimer = setTimeout(() => {
 			pictureBlob(picture, fileName).then(
 				(pictureFile) =>
 					active &&
@@ -35,8 +35,8 @@ function usePictureDownload(picture) {
 			clearTimeout(preparationTimer);
 		};
 	}, [picture, fileName]);
-	let sendPicture = async () => {
-		let pictureFile =
+	const sendPicture = async () => {
+		const pictureFile =
 			preparedPicture?.of === picture
 				? preparedPicture.file
 				: await pictureBlob(picture, fileName);

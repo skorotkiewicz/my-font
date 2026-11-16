@@ -2,11 +2,11 @@ import * as React from "react";
 var isFileDrag = (event) =>
 	event.dataTransfer?.types.includes(`Files`) ?? false;
 function useFileDrop(onDrop) {
-	let [dragging, setDragging] = React.useState(false);
-	let handleFile = React.useEffectEvent(onDrop);
+	const [dragging, setDragging] = React.useState(false);
+	const handleFile = React.useEffectEvent(onDrop);
 	React.useEffect(() => {
 		let dragDepth = 0;
-		let handleDragEnter = (event) => {
+		const handleDragEnter = (event) => {
 			if (isFileDrag(event)) {
 				event.preventDefault();
 				if (dragDepth++ === 0) {
@@ -14,13 +14,13 @@ function useFileDrop(onDrop) {
 				}
 			}
 		};
-		let handleDragLeave = (event) => {
+		const handleDragLeave = (event) => {
 			if (isFileDrag(event) && --dragDepth <= 0) {
 				dragDepth = 0;
 				setDragging(false);
 			}
 		};
-		let handleDragOver = (event) => {
+		const handleDragOver = (event) => {
 			if (isFileDrag(event)) {
 				event.preventDefault();
 				if (event.dataTransfer) {
@@ -28,14 +28,14 @@ function useFileDrop(onDrop) {
 				}
 			}
 		};
-		let handleDrop = (event) => {
+		const handleDrop = (event) => {
 			if (!isFileDrag(event)) {
 				return;
 			}
 			event.preventDefault();
 			dragDepth = 0;
 			setDragging(false);
-			let droppedFile = event.dataTransfer?.files[0];
+			const droppedFile = event.dataTransfer?.files[0];
 			if (droppedFile) {
 				handleFile(droppedFile);
 			}

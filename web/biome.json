@@ -3,38 +3,5 @@
 	"css": { "parser": { "tailwindDirectives": true } },
 	"files": {
 		"includes": ["**", "!**/dist", "!**/public"]
-	},
-	"overrides": [
-		{
-			"includes": ["src/game/**"],
-			"linter": {
-				"rules": {
-					"suspicious": {
-						"noAssignInExpressions": "off",
-						"noDoubleEquals": "off",
-						"useIterableCallbackReturn": "off"
-					},
-					"complexity": {
-						"noCommaOperator": "off",
-						"useOptionalChain": "off",
-						"useMathMinMax": "off",
-						"noImportantStyles": "off"
-					},
-					"style": {
-						"useConst": "off"
-					}
-				}
-			}
-		},
-		{
-			"includes": ["src/game.css"],
-			"linter": {
-				"rules": {
-					"style": {
-						"noDescendingSpecificity": "off"
-					}
-				}
-			}
-		}
-	]
+	}
 }

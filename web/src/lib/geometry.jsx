@@ -13,8 +13,8 @@ function signedArea(polygon) {
 }
 function polygonBounds(polygons) {
 	let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity];
-	for (let polygon of polygons) {
-		for (let [pointX, pointY] of polygon) {
+	for (const polygon of polygons) {
+		for (const [pointX, pointY] of polygon) {
 			if (pointX < minX) {
 				minX = pointX;
 			}
@@ -43,10 +43,10 @@ function polygonBounds(polygons) {
 var clamp = (number, lowerBound, upperBound) =>
 	Math.min(upperBound, Math.max(lowerBound, number));
 function median(numbers) {
-	let sorted = numbers.toSorted(
+	const sorted = numbers.toSorted(
 		(leftNumber, rightNumber) => leftNumber - rightNumber,
 	);
-	let middle = sorted.length >> 1;
+	const middle = sorted.length >> 1;
 	if (sorted.length % 2) {
 		return sorted[middle];
 	} else {

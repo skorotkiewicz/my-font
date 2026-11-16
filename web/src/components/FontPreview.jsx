@@ -5,7 +5,7 @@ import { LiveText } from "./LiveText.jsx";
 import { specimenForCharacter } from "../data/specimens.jsx";
 import { ToolButton } from "./ui/Buttons.jsx";
 function OpenFontPrompt() {
-	let { actions } = useWrite();
+	const { actions } = useWrite();
 	return (
 		<div className="flex w-full shrink-0 items-center justify-between gap-3 pt-3 short:hidden lg:hidden">
 			<p className="min-w-0 truncate text-[0.9375rem] leading-5 text-paper/90">{`Made a font here before?`}</p>
@@ -21,13 +21,13 @@ function OpenFontPrompt() {
 	);
 }
 function FontPreview() {
-	let { state } = useWrite();
-	let { cp: codepoint, drawn, status } = state;
-	let [firstWord, ...remainingWords] = specimenForCharacter(
+	const { state } = useWrite();
+	const { cp: codepoint, drawn, status } = state;
+	const [firstWord, ...remainingWords] = specimenForCharacter(
 		characterFor(codepoint),
 		(character) => drawn.has(character.charCodeAt(0)),
 	);
-	let isEmpty = status !== `loading` && drawn.size === 0;
+	const isEmpty = status !== `loading` && drawn.size === 0;
 	return (
 		<section
 			aria-label={`${characterFor(codepoint)} in your font`}

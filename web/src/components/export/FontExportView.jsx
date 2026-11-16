@@ -32,8 +32,8 @@ function FontDownloadButton({
 	done: isDone,
 	onDownload,
 }) {
-	let { label: formatLabel, use: formatUse } = downloadFormats[format];
-	let { surface: surfaceClass, small: captionClass } =
+	const { label: formatLabel, use: formatUse } = downloadFormats[format];
+	const { surface: surfaceClass, small: captionClass } =
 		downloadButtonStyles[format];
 	return (
 		<button
@@ -63,20 +63,19 @@ function FontDownloadButton({
 	);
 }
 function ProjectActions() {
-	let { state, actions } = useWrite();
-	let [isConfirmingErase, setIsConfirmingErase] = React.useState(false);
-	let startOverButtonRef = React.useRef(null);
-	let cancelErase = () => {
-		(0, tp.flushSync)(() => setIsConfirmingErase(false));
+	const { state, actions } = useWrite();
+	const [isConfirmingErase, setIsConfirmingErase] = React.useState(false);
+	const startOverButtonRef = React.useRef(null);
+	const cancelErase = () => {
+		tp.flushSync(() => setIsConfirmingErase(false));
 		startOverButtonRef.current?.focus();
 	};
-	let writtenCount = state.drawn.size;
+	const writtenCount = state.drawn.size;
 	if (isConfirmingErase) {
 		return (
-			<div
-				role="group"
+			<fieldset
 				aria-labelledby="start-over-warning"
-				className="flex items-center gap-2 px-5 pt-4 lg:px-6"
+				className="m-0 flex min-w-0 items-center gap-2 border-0 px-5 pt-4 lg:px-6"
 			>
 				<span
 					id="start-over-warning"
@@ -94,7 +93,7 @@ function ProjectActions() {
 					autoFocus={true}
 					onClick={cancelErase}
 				>{`Keep them`}</OutlineButton>
-			</div>
+			</fieldset>
 		);
 	} else {
 		return (
@@ -112,9 +111,9 @@ function ProjectActions() {
 	}
 }
 function FontNameInput() {
-	let { state, actions } = useWrite();
-	let descriptionId = React.useId();
-	let { name: fontName } = state.project;
+	const { state, actions } = useWrite();
+	const descriptionId = React.useId();
+	const { name: fontName } = state.project;
 	return (
 		<label className="flex flex-col gap-2 px-5 pb-2 lg:px-6">
 			<span className="flex items-baseline justify-between gap-3 text-caption font-medium text-paper/90">
@@ -151,9 +150,9 @@ function PictureSummary({
 	picture: pictureDownload,
 	focusStyle,
 }) {
-	let { actions } = useWrite();
-	let styleButtonRef = React.useRef(null);
-	let openPictureStyle = () => actions.openSheet(`picture`);
+	const { actions } = useWrite();
+	const styleButtonRef = React.useRef(null);
+	const openPictureStyle = () => actions.openSheet(`picture`);
 	React.useEffect(() => {
 		if (focusStyle) {
 			styleButtonRef.current?.focus({
@@ -226,13 +225,13 @@ function FontExportView({
 	picture: pictureDownload,
 	focusStyle,
 }) {
-	let { state } = useWrite();
-	let { project } = state;
-	let fontFamily = useTextStyle();
-	let [completedDownload, setCompletedDownload] = React.useState();
-	let fontDownloads = useFontDownloads(project, state.alignment, state.font);
-	let downloadInProgressRef = React.useRef(false);
-	let sendFont = async (format) => {
+	const { state } = useWrite();
+	const { project } = state;
+	const fontFamily = useTextStyle();
+	const [completedDownload, setCompletedDownload] = React.useState();
+	const fontDownloads = useFontDownloads(project, state.alignment, state.font);
+	const downloadInProgressRef = React.useRef(false);
+	const sendFont = async (format) => {
 		if (!downloadInProgressRef.current) {
 			downloadInProgressRef.current = true;
 			try {
@@ -250,7 +249,7 @@ function FontExportView({
 			}
 		}
 	};
-	let isDownloaded = (format) =>
+	const isDownloaded = (format) =>
 		completedDownload?.kind === format && completedDownload.of === project;
 	return (
 		<div className="flex flex-col pb-1">

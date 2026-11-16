@@ -132,7 +132,7 @@
 			"scope": 6877,
 			"position": 6878,
 			"original": "t",
-			"renamed": "unusedElement"
+			"renamed": "_unusedElement"
 		},
 		{
 			"source": "BcpSTgJi.js",
@@ -3149,7 +3149,7 @@
 			"scope": 32124,
 			"position": 32125,
 			"original": "e",
-			"renamed": "unusedElement"
+			"renamed": "_unusedElement"
 		},
 		{
 			"source": "BcpSTgJi.js",
@@ -8196,7 +8196,7 @@
 			"scope": 274385,
 			"position": 274386,
 			"original": "e",
-			"renamed": "dragEvent"
+			"renamed": "_dragEvent"
 		},
 		{
 			"source": "CEjkeowH.js",

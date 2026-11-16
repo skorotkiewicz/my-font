@@ -44,13 +44,13 @@ var samplingStep = 0.2;
 var pointDistance = (startPoint, endPoint) =>
 	Math.hypot(startPoint[0] - endPoint[0], startPoint[1] - endPoint[1]);
 function cornerCosine(previousPoint, cornerPoint, nextPoint) {
-	let [incomingX, incomingY, outgoingX, outgoingY] = [
+	const [incomingX, incomingY, outgoingX, outgoingY] = [
 		cornerPoint[0] - previousPoint[0],
 		cornerPoint[1] - previousPoint[1],
 		nextPoint[0] - cornerPoint[0],
 		nextPoint[1] - cornerPoint[1],
 	];
-	let lengthProduct =
+	const lengthProduct =
 		Math.hypot(incomingX, incomingY) * Math.hypot(outgoingX, outgoingY);
 	if (lengthProduct) {
 		return (incomingX * outgoingX + incomingY * outgoingY) / lengthProduct;
@@ -59,8 +59,8 @@ function cornerCosine(previousPoint, cornerPoint, nextPoint) {
 	}
 }
 function trimStrokeEnds(points, size) {
-	let trimDistance = size / 3;
-	let pointCount = points.length;
+	const trimDistance = size / 3;
+	const pointCount = points.length;
 	let firstKeptIndex = 1;
 	let startPressure = points[0][2];
 	while (
@@ -76,7 +76,7 @@ function trimStrokeEnds(points, size) {
 	) {
 		lastKeptIndex--;
 	}
-	let trimmedPoints = [
+	const trimmedPoints = [
 		[points[0][0], points[0][1], startPressure],
 		...points.slice(firstKeptIndex, lastKeptIndex + 1),
 	];
@@ -89,9 +89,9 @@ function trimStrokeEnds(points, size) {
 	};
 }
 function strokeTaper(points, options, targetPressure) {
-	let size = options.size;
-	let pointCount = points.length;
-	let pressureAt = (pressureIndex) =>
+	const size = options.size;
+	const pointCount = points.length;
+	const pressureAt = (pressureIndex) =>
 		options.simulatePressure
 			? 0.5
 			: Math.min(1, points[pressureIndex][2] * pressureMultiplier);
@@ -105,12 +105,12 @@ function strokeTaper(points, options, targetPressure) {
 	if (totalDistance < size) {
 		return points.map(() => targetPressure);
 	}
-	let advancePressure = (previousPressure, nextIndex) => {
-		let distanceFraction = Math.min(
+	const advancePressure = (previousPressure, nextIndex) => {
+		const distanceFraction = Math.min(
 			1,
 			pointDistance(points[nextIndex - 1], points[nextIndex]) / size,
 		);
-		let targetNextPressure = options.simulatePressure
+		const targetNextPressure = options.simulatePressure
 			? 1 - distanceFraction
 			: pressureAt(nextIndex);
 		return Math.min(
@@ -134,11 +134,10 @@ function strokeTaper(points, options, targetPressure) {
 		smoothedPressure =
 			(smoothedPressure + advancePressure(smoothedPressure, warmupIndex)) / 2;
 	}
-	let pressures = [smoothedPressure];
+	const pressures = [smoothedPressure];
 	for (let pressureIndex = 1; pressureIndex < pointCount; pressureIndex++) {
-		pressures.push(
-			(smoothedPressure = advancePressure(smoothedPressure, pressureIndex)),
-		);
+		smoothedPressure = advancePressure(smoothedPressure, pressureIndex);
+		pressures.push(smoothedPressure);
 	}
 	let [weightedPressureSum, sampleDistance] = [0, 0];
 	for (
@@ -146,7 +145,7 @@ function strokeTaper(points, options, targetPressure) {
 		averageIndex < pointCount && sampleDistance < size * 5;
 		averageIndex++
 	) {
-		let segmentDistance = pointDistance(
+		const segmentDistance = pointDistance(
 			points[averageIndex - 1],
 			points[averageIndex],
 		);
@@ -171,15 +170,15 @@ function strokeTaper(points, options, targetPressure) {
 	});
 }
 function resamplePoints(points, cornerDistance) {
-	let pointCount = points.length;
-	let cumulativeDistances = [0];
+	const pointCount = points.length;
+	const cumulativeDistances = [0];
 	for (let distanceIndex = 1; distanceIndex < pointCount; distanceIndex++) {
 		cumulativeDistances.push(
 			cumulativeDistances[distanceIndex - 1] +
 				pointDistance(points[distanceIndex - 1], points[distanceIndex]),
 		);
 	}
-	let cornerIndices = [];
+	const cornerIndices = [];
 	let candidateIndex = -1;
 	let candidateCosine = samplingStep;
 	for (
@@ -214,7 +213,7 @@ function resamplePoints(points, cornerDistance) {
 		) {
 			break;
 		}
-		let turnCosine = cornerCosine(
+		const turnCosine = cornerCosine(
 			points[previousIndex],
 			points[pointIndex],
 			points[nextIndex],
@@ -240,16 +239,16 @@ function strokePolygons(points, inputType, isComplete = true) {
 	if (!points.length) {
 		return [];
 	}
-	let options = optionsForInput(inputType);
-	let size = options.size;
-	let { pts: trimmedPoints, trimmedEnd } = trimStrokeEnds(points, size);
-	let pressures = strokeTaper(
+	const options = optionsForInput(inputType);
+	const size = options.size;
+	const { pts: trimmedPoints, trimmedEnd } = trimStrokeEnds(points, size);
+	const pressures = strokeTaper(
 		trimmedPoints,
 		options,
 		thresholdForInput(inputType),
 	);
-	let pointCount = trimmedPoints.length;
-	let completeLastSegment =
+	const pointCount = trimmedPoints.length;
+	const completeLastSegment =
 		isComplete ||
 		!options.simulatePressure ||
 		trimmedEnd ||
@@ -258,18 +257,18 @@ function strokePolygons(points, inputType, isComplete = true) {
 			trimmedPoints[pointCount - 2],
 			trimmedPoints[pointCount - 1],
 		) < size;
-	let segmentBoundaries = [
+	const segmentBoundaries = [
 		0,
 		...resamplePoints(trimmedPoints, size / 2),
 		pointCount - 1,
 	];
-	let polygons = [];
+	const polygons = [];
 	for (
 		let segmentIndex = 1;
 		segmentIndex < segmentBoundaries.length;
 		segmentIndex++
 	) {
-		let segmentPoints = [];
+		const segmentPoints = [];
 		for (
 			let pointIndex = segmentBoundaries[segmentIndex - 1];
 			pointIndex <= segmentBoundaries[segmentIndex];
@@ -281,7 +280,7 @@ function strokePolygons(points, inputType, isComplete = true) {
 				pressures[pointIndex],
 			]);
 		}
-		let outline = freehandStroke(segmentPoints, {
+		const outline = freehandStroke(segmentPoints, {
 			...options,
 			simulatePressure: false,
 			last: segmentIndex < segmentBoundaries.length - 1 || completeLastSegment,
@@ -296,10 +295,8 @@ var polygonCache = new WeakMap();
 function polygonsForStroke(stroke) {
 	let polygons = polygonCache.get(stroke);
 	if (!polygons) {
-		polygonCache.set(
-			stroke,
-			(polygons = strokePolygons(stroke.pts, stroke.input)),
-		);
+		polygons = strokePolygons(stroke.pts, stroke.input);
+		polygonCache.set(stroke, polygons);
 	}
 	return polygons;
 }

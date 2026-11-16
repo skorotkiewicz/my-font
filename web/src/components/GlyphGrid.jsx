@@ -1,17 +1,17 @@
 import * as React from "react";
 import { useWrite } from "../state/WriteProvider.jsx";
 function closestGridCell(cells, currentCell, rowDirection) {
-	let currentRect = currentCell.getBoundingClientRect();
+	const currentRect = currentCell.getBoundingClientRect();
 	let closestCell;
 	let closestRowDistance = Infinity;
 	let closestColumnDistance = Infinity;
-	for (let cell of cells) {
-		let cellRect = cell.getBoundingClientRect();
-		let rowDistance = (cellRect.top - currentRect.top) * rowDirection;
+	for (const cell of cells) {
+		const cellRect = cell.getBoundingClientRect();
+		const rowDistance = (cellRect.top - currentRect.top) * rowDirection;
 		if (rowDistance < 1) {
 			continue;
 		}
-		let columnDistance = Math.abs(cellRect.left - currentRect.left);
+		const columnDistance = Math.abs(cellRect.left - currentRect.left);
 		if (
 			rowDistance < closestRowDistance - 1 ||
 			(Math.abs(rowDistance - closestRowDistance) <= 1 &&
@@ -31,27 +31,26 @@ function GlyphGrid({
 	className,
 	tileClassName,
 }) {
-	let { state } = useWrite();
-	let { codepoints } = characterSet;
-	let [focusedCodepoint, setFocusedCodepoint] = React.useState();
-	let tabStopCodepoint =
+	const { state } = useWrite();
+	const { codepoints } = characterSet;
+	const [focusedCodepoint, setFocusedCodepoint] = React.useState();
+	const tabStopCodepoint =
 		focusedCodepoint ??
 		(codepoints.includes(state.cp) ? state.cp : codepoints[0]);
 	return (
-		<div
-			role="group"
+		<fieldset
 			aria-label={`${characterSet.label} glyphs`}
 			onKeyDown={(event) => {
-				let activeCell = document.activeElement;
+				const activeCell = document.activeElement;
 				if (
 					!(activeCell instanceof HTMLElement) ||
 					activeCell.parentElement !== event.currentTarget
 				) {
 					return;
 				}
-				let gridCells = [...event.currentTarget.children];
-				let activeIndex = gridCells.indexOf(activeCell);
-				let nextCell =
+				const gridCells = [...event.currentTarget.children];
+				const activeIndex = gridCells.indexOf(activeCell);
+				const nextCell =
 					event.key === `ArrowLeft`
 						? gridCells[activeIndex - 1]
 						: event.key === `ArrowRight`
@@ -77,7 +76,7 @@ function GlyphGrid({
 					setFocusedCodepoint(undefined);
 				}
 			}}
-			className={className}
+			className={`m-0 min-w-0 border-0 p-0 ${className}`}
 		>
 			{codepoints.map((glyphCodepoint) => (
 				<_Component1
@@ -90,7 +89,7 @@ function GlyphGrid({
 					key={glyphCodepoint}
 				/>
 			))}
-		</div>
+		</fieldset>
 	);
 }
 export { GlyphGrid };

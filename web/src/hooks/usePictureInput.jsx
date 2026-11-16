@@ -33,11 +33,11 @@ var canRenderCodepoint = (codepoint, drawnCodepoints) =>
 	spaceCodepoints.includes(codepoint) ||
 	drawnCodepoints.has(pictureAliases.get(codepoint) ?? codepoint);
 function usePictureInput(text) {
-	let { state } = useWrite();
-	let { drawn, picture: pictureStyle } = state;
-	let name = familyName(state.project.name);
-	let fontFamily = state.font?.family;
-	let guideLines = state.alignment.lines;
+	const { state } = useWrite();
+	const { drawn, picture: pictureStyle } = state;
+	const name = familyName(state.project.name);
+	const fontFamily = state.font?.family;
+	const guideLines = state.alignment.lines;
 	return React.useMemo(
 		() => ({
 			text: text,

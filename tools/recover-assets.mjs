@@ -80,6 +80,10 @@ export function recoverFonts(root) {
 		css = css.replaceAll(original, renamed);
 		indexHtml = indexHtml.replaceAll(original, renamed);
 	}
+	css = css.replace(
+		/font-family: ('Archivo', 'Archivo Fallback'|'Instrument Sans', 'Instrument Sans Fallback');/g,
+		"font-family: $1, sans-serif;",
+	);
 	mkdirSync(path.join(root, "web/src/styles"), { recursive: true });
 	writeFileSync(path.join(root, "web/src/styles/fonts.css"), css);
 	writeFileSync(indexPath, indexHtml);

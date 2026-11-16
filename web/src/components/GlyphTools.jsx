@@ -5,14 +5,14 @@ import { useWrite } from "../state/WriteProvider.jsx";
 import { useShortcutLabel } from "../hooks/useShortcutLabel.jsx";
 import { NavigationButton, PrimaryButton, GlyphBadge } from "./ui/Buttons.jsx";
 function GlyphTools() {
-	let { state, actions } = useWrite();
-	let {
+	const { state, actions } = useWrite();
+	const {
 		prevCp: previousCodepoint,
 		nextCp: nextCodepoint,
 		strokes,
 		canUndo,
 	} = state;
-	let shortcutLabel = useShortcutLabel();
+	const shortcutLabel = useShortcutLabel();
 	return (
 		<nav
 			aria-label="Glyph tools"

@@ -14,8 +14,8 @@ import { FontPreview } from "./components/FontPreview.jsx";
 import { WritingStrip } from "./components/WritingStrip.jsx";
 import { GlyphTools } from "./components/GlyphTools.jsx";
 function GlyphAnnouncement() {
-	let { state } = useWrite();
-	let glyphOrdinal = state.set.codepoints.indexOf(state.cp) + 1;
+	const { state } = useWrite();
+	const glyphOrdinal = state.set.codepoints.indexOf(state.cp) + 1;
 	return (
 		<p
 			className="sr-only"

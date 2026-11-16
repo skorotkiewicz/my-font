@@ -42,7 +42,7 @@
 }
 
 .font-archivo {
-	font-family: "Archivo", "Archivo Fallback";
+	font-family: "Archivo", "Archivo Fallback", sans-serif;
 	font-style: normal;
 }
 
@@ -84,7 +84,7 @@
 }
 
 .font-instrument-sans {
-	font-family: "Instrument Sans", "Instrument Sans Fallback";
+	font-family: "Instrument Sans", "Instrument Sans Fallback", sans-serif;
 	font-style: normal;
 }
 

@@ -7,11 +7,11 @@ function PictureCanvas({
 	label,
 	className,
 }) {
-	let canvasRef = React.useRef(null);
+	const canvasRef = React.useRef(null);
 	React.useEffect(() => {
-		let canvasElement = canvasRef.current;
+		const canvasElement = canvasRef.current;
 		let isActive = true;
-		let paint = () =>
+		const paint = () =>
 			paintPicture(
 				canvasElement,
 				paper

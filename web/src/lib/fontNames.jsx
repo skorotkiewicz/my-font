@@ -1,7 +1,7 @@
 var defaultFamilyName = `My Hand`;
 function truncateName(name, maxLength) {
 	let truncatedName = ``;
-	for (let character of name) {
+	for (const character of name) {
 		if (truncatedName.length + character.length > maxLength) {
 			break;
 		}
@@ -18,7 +18,7 @@ var familyName = (name) =>
 		31,
 	).trim() || `My Hand`;
 function fileStem(name) {
-	let stem = familyName(name)
+	const stem = familyName(name)
 		.normalize(`NFC`)
 		.replace(/[^\p{L}\p{M}\p{N}]/gu, ``);
 	if (/[\p{L}\p{N}]/u.test(stem)) {

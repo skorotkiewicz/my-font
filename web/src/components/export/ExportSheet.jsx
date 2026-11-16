@@ -15,7 +15,7 @@ import {
 } from "../ui/Sheet.jsx";
 import { Credit } from "../Credit.jsx";
 function EmptyExport() {
-	let { actions } = useWrite();
+	const { actions } = useWrite();
 	return (
 		<div className="flex flex-col px-5 pt-1 pb-1 lg:px-6">
 			<div className="flex flex-col gap-1.5 pb-5.5">
@@ -36,26 +36,26 @@ function EmptyExport() {
 	);
 }
 function ExportSheet() {
-	let { state, actions } = useWrite();
-	let { sheet } = state;
-	let exportLoaded = useExportLoaded();
-	let isExportSheet = sheet === `export` || sheet === `picture`;
-	let isEmpty = state.drawn.size === 0;
-	let isOpen = isExportSheet && (isEmpty || exportLoaded);
-	let [view, setView] = React.useState(`font`);
-	let nextView = sheet === `picture` ? `picture` : `font`;
+	const { state, actions } = useWrite();
+	const { sheet } = state;
+	const exportLoaded = useExportLoaded();
+	const isExportSheet = sheet === `export` || sheet === `picture`;
+	const isEmpty = state.drawn.size === 0;
+	const isOpen = isExportSheet && (isEmpty || exportLoaded);
+	const [view, setView] = React.useState(`font`);
+	const nextView = sheet === `picture` ? `picture` : `font`;
 	if (isExportSheet && view !== nextView) {
 		setView(nextView);
 	}
 	React.useEffect(() => {
-		let preloadHandle = (
+		const preloadHandle = (
 			window.requestIdleCallback ??
 			((callback) => window.setTimeout(callback, 1500))
 		)(preloadExport);
 		return () =>
 			(window.cancelIdleCallback ?? window.clearTimeout)(preloadHandle);
 	}, []);
-	let closeOnLoadError = React.useEffectEvent(() => actions.closeSheet());
+	const closeOnLoadError = React.useEffectEvent(() => actions.closeSheet());
 	React.useEffect(() => {
 		if (isExportSheet && !isEmpty && !exportLoaded) {
 			loadExport().catch(closeOnLoadError);

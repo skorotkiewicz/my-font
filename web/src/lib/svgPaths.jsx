@@ -2,12 +2,12 @@ import { signedArea } from "./geometry.jsx";
 import { polygonsForStroke } from "./strokes.jsx";
 var roundTenth = (number) => Math.round(number * 10) / 10;
 function polygonPath(polygon) {
-	let count = polygon.length;
+	const count = polygon.length;
 	if (count < 3) {
 		return ``;
 	}
-	let path = (vertexIndex) => {
-		let [currentVertex, nextVertex] = [
+	const path = (vertexIndex) => {
+		const [currentVertex, nextVertex] = [
 			polygon[vertexIndex % count],
 			polygon[(vertexIndex + 1) % count],
 		];
@@ -33,7 +33,8 @@ var pathCache = new WeakMap();
 function strokePath(stroke) {
 	let path = pathCache.get(stroke);
 	if (path === undefined) {
-		pathCache.set(stroke, (path = polygonsPath(polygonsForStroke(stroke))));
+		path = polygonsPath(polygonsForStroke(stroke));
+		pathCache.set(stroke, path);
 	}
 	return path;
 }

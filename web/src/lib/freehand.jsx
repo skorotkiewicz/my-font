@@ -12,7 +12,7 @@ function strokeRadius(
 }
 var { min: minimum } = Math;
 function simulatePressure(previousPressure, distance, size) {
-	let distanceFraction = minimum(1, distance / size);
+	const distanceFraction = minimum(1, distance / size);
 	return minimum(
 		1,
 		previousPressure +
@@ -54,7 +54,7 @@ function perpendicularVector(vector) {
 	return [vector[1], -vector[0]];
 }
 function perpendicularVectorInto(target, vector) {
-	let originalX = vector[0];
+	const originalX = vector[0];
 	target[0] = vector[1];
 	target[1] = -originalX;
 	return target;
@@ -69,8 +69,8 @@ function vectorLength(vector) {
 	return Math.hypot(vector[0], vector[1]);
 }
 function squaredDistance(startPoint, endPoint) {
-	let deltaX = startPoint[0] - endPoint[0];
-	let deltaY = startPoint[1] - endPoint[1];
+	const deltaX = startPoint[0] - endPoint[0];
+	const deltaY = startPoint[1] - endPoint[1];
 	return deltaX * deltaX + deltaY * deltaY;
 }
 function normalizeVector(vector) {
@@ -80,21 +80,21 @@ function vectorDistance(startPoint, endPoint) {
 	return Math.hypot(startPoint[1] - endPoint[1], startPoint[0] - endPoint[0]);
 }
 function rotatePoint(point, centerPoint, rotationRadians) {
-	let sine = Math.sin(rotationRadians);
-	let cosine = Math.cos(rotationRadians);
-	let relativeX = point[0] - centerPoint[0];
-	let relativeY = point[1] - centerPoint[1];
-	let rotatedX = relativeX * cosine - relativeY * sine;
-	let rotatedY = relativeX * sine + relativeY * cosine;
+	const sine = Math.sin(rotationRadians);
+	const cosine = Math.cos(rotationRadians);
+	const relativeX = point[0] - centerPoint[0];
+	const relativeY = point[1] - centerPoint[1];
+	const rotatedX = relativeX * cosine - relativeY * sine;
+	const rotatedY = relativeX * sine + relativeY * cosine;
 	return [rotatedX + centerPoint[0], rotatedY + centerPoint[1]];
 }
 function rotatePointInto(target, point, centerPoint, rotationRadians) {
-	let sine = Math.sin(rotationRadians);
-	let cosine = Math.cos(rotationRadians);
-	let relativeX = point[0] - centerPoint[0];
-	let relativeY = point[1] - centerPoint[1];
-	let rotatedX = relativeX * cosine - relativeY * sine;
-	let rotatedY = relativeX * sine + relativeY * cosine;
+	const sine = Math.sin(rotationRadians);
+	const cosine = Math.cos(rotationRadians);
+	const relativeX = point[0] - centerPoint[0];
+	const relativeY = point[1] - centerPoint[1];
+	const rotatedX = relativeX * cosine - relativeY * sine;
+	const rotatedY = relativeX * sine + relativeY * cosine;
 	target[0] = rotatedX + centerPoint[0];
 	target[1] = rotatedY + centerPoint[1];
 	return target;
@@ -106,8 +106,8 @@ function lerpVector(startVector, endVector, interpolationFraction) {
 	);
 }
 function lerpVectorInto(target, startVector, endVector, interpolationFraction) {
-	let deltaX = endVector[0] - startVector[0];
-	let deltaY = endVector[1] - startVector[1];
+	const deltaX = endVector[0] - startVector[0];
+	const deltaY = endVector[1] - startVector[1];
 	target[0] = startVector[0] + deltaX * interpolationFraction;
 	target[1] = startVector[1] + deltaY * interpolationFraction;
 	return target;
@@ -119,7 +119,7 @@ var normalScratch = [0, 0];
 var leftScratch = [0, 0];
 var rightScratch = [0, 0];
 function dotOutline(centerPoint, outlineRadius) {
-	let firstOutlinePoint = projectVector(
+	const firstOutlinePoint = projectVector(
 		centerPoint,
 		normalizeVector(
 			perpendicularVector(
@@ -128,8 +128,8 @@ function dotOutline(centerPoint, outlineRadius) {
 		),
 		-outlineRadius,
 	);
-	let outlinePoints = [];
-	let angleStep = 1 / 13;
+	const outlinePoints = [];
+	const angleStep = 1 / 13;
 	for (
 		let rotationFraction = angleStep;
 		rotationFraction <= 1;
@@ -146,8 +146,8 @@ function dotOutline(centerPoint, outlineRadius) {
 	return outlinePoints;
 }
 function roundStartCap(centerPoint, edgePoint, segmentCount) {
-	let capPoints = [];
-	let angleStep = 1 / segmentCount;
+	const capPoints = [];
+	const angleStep = 1 / segmentCount;
 	for (
 		let rotationFraction = angleStep;
 		rotationFraction <= 1;
@@ -160,9 +160,9 @@ function roundStartCap(centerPoint, edgePoint, segmentCount) {
 	return capPoints;
 }
 function flatStartCap(centerPoint, leftEdge, rightEdge) {
-	let edgeSpan = subtractVectors(leftEdge, rightEdge);
-	let halfSpan = scaleVector(edgeSpan, 0.5);
-	let extendedHalfSpan = scaleVector(edgeSpan, 0.51);
+	const edgeSpan = subtractVectors(leftEdge, rightEdge);
+	const halfSpan = scaleVector(edgeSpan, 0.5);
+	const extendedHalfSpan = scaleVector(edgeSpan, 0.51);
 	return [
 		subtractVectors(centerPoint, halfSpan),
 		subtractVectors(centerPoint, extendedHalfSpan),
@@ -171,9 +171,9 @@ function flatStartCap(centerPoint, leftEdge, rightEdge) {
 	];
 }
 function roundEndCap(centerPoint, normal, outlineRadius, segmentCount) {
-	let capPoints = [];
-	let firstCapPoint = projectVector(centerPoint, normal, outlineRadius);
-	let angleStep = 1 / segmentCount;
+	const capPoints = [];
+	const firstCapPoint = projectVector(centerPoint, normal, outlineRadius);
+	const angleStep = 1 / segmentCount;
 	for (
 		let rotationFraction = angleStep;
 		rotationFraction < 1;
@@ -212,7 +212,7 @@ function initialPressure(points, shouldSimulatePressure, size) {
 	}, points[0].pressure);
 }
 function strokeOutline(points, options = {}) {
-	let {
+	const {
 		size = 16,
 		smoothing = 0.5,
 		thinning = 0.5,
@@ -222,12 +222,12 @@ function strokeOutline(points, options = {}) {
 		end: endOptions = {},
 		last: isComplete = false,
 	} = options;
-	let {
+	const {
 		cap: capStart = true,
 		easing: startEasing = (startFraction) =>
 			startFraction * (2 - startFraction),
 	} = startOptions;
-	let {
+	const {
 		cap: capEnd = true,
 		easing: endEasing = (endFraction) =>
 			--endFraction * endFraction * endFraction + 1,
@@ -235,12 +235,12 @@ function strokeOutline(points, options = {}) {
 	if (points.length === 0 || size <= 0) {
 		return [];
 	}
-	let totalLength = points[points.length - 1].runningLength;
-	let startTaper = taperLength(startOptions.taper, size, totalLength);
-	let endTaper = taperLength(endOptions.taper, size, totalLength);
-	let minimumDistanceSquared = (size * smoothing) ** 2;
-	let leftEdge = [];
-	let rightEdge = [];
+	const totalLength = points[points.length - 1].runningLength;
+	const startTaper = taperLength(startOptions.taper, size, totalLength);
+	const endTaper = taperLength(endOptions.taper, size, totalLength);
+	const minimumDistanceSquared = (size * smoothing) ** 2;
+	const leftEdge = [];
+	const rightEdge = [];
 	let previousPressure = initialPressure(points, shouldSimulatePressure, size);
 	let outlineRadius = strokeRadius(
 		size,
@@ -257,13 +257,13 @@ function strokeOutline(points, options = {}) {
 	let previousWasSharpCorner = false;
 	for (let pointIndex = 0; pointIndex < points.length; pointIndex++) {
 		let { pressure } = points[pointIndex];
-		let {
+		const {
 			point: centerPoint,
 			vector: direction,
 			distance,
 			runningLength,
 		} = points[pointIndex];
-		let isLastPoint = pointIndex === points.length - 1;
+		const isLastPoint = pointIndex === points.length - 1;
 		if (!isLastPoint && totalLength - runningLength < 3) {
 			continue;
 		}
@@ -278,9 +278,9 @@ function strokeOutline(points, options = {}) {
 		if (initialRadius === undefined) {
 			initialRadius = outlineRadius;
 		}
-		let startTaperStrength =
+		const startTaperStrength =
 			runningLength < startTaper ? startEasing(runningLength / startTaper) : 1;
-		let endTaperStrength =
+		const endTaperStrength =
 			totalLength - runningLength < endTaper
 				? endEasing((totalLength - runningLength) / endTaper)
 				: 1;
@@ -288,12 +288,15 @@ function strokeOutline(points, options = {}) {
 			0.01,
 			outlineRadius * Math.min(startTaperStrength, endTaperStrength),
 		);
-		let nextVector = (isLastPoint ? points[pointIndex] : points[pointIndex + 1])
-			.vector;
-		let nextDirectionDot = isLastPoint ? 1 : dotProduct(direction, nextVector);
-		let isPreviousSharpCorner =
+		const nextVector = (
+			isLastPoint ? points[pointIndex] : points[pointIndex + 1]
+		).vector;
+		const nextDirectionDot = isLastPoint
+			? 1
+			: dotProduct(direction, nextVector);
+		const isPreviousSharpCorner =
 			dotProduct(direction, previousVector) < 0 && !previousWasSharpCorner;
-		let isNextSharpCorner = nextDirectionDot !== null && nextDirectionDot < 0;
+		const isNextSharpCorner = nextDirectionDot !== null && nextDirectionDot < 0;
 		if (isPreviousSharpCorner || isNextSharpCorner) {
 			perpendicularVectorInto(normalScratch, previousVector);
 			scaleVectorInto(normalScratch, normalScratch, outlineRadius);
@@ -361,13 +364,13 @@ function strokeOutline(points, options = {}) {
 			}
 		}
 	}
-	let startPoint = [points[0].point[0], points[0].point[1]];
-	let endPoint =
+	const startPoint = [points[0].point[0], points[0].point[1]];
+	const endPoint =
 		points.length > 1
 			? [points[points.length - 1].point[0], points[points.length - 1].point[1]]
 			: addVectors(points[0].point, [1, 1]);
-	let startCapPoints = [];
-	let endCapPoints = [];
+	const startCapPoints = [];
+	const endCapPoints = [];
 	if (points.length === 1) {
 		if ((!startTaper && !endTaper) || isComplete) {
 			return dotOutline(startPoint, initialRadius || outlineRadius);
@@ -382,7 +385,7 @@ function strokeOutline(points, options = {}) {
 				);
 			}
 		}
-		let endNormal = perpendicularVector(
+		const endNormal = perpendicularVector(
 			negateVector(points[points.length - 1].vector),
 		);
 		if (endTaper || (startTaper && points.length === 1)) {
@@ -400,11 +403,11 @@ function hasPressure(pressure) {
 	return pressure != null && pressure >= 0;
 }
 function strokePoints(inputPoints, options = {}) {
-	let { streamline = 0.5, size = 16, last: isComplete = false } = options;
+	const { streamline = 0.5, size = 16, last: isComplete = false } = options;
 	if (inputPoints.length === 0) {
 		return [];
 	}
-	let interpolationFraction = 0.15 + (1 - streamline) * 0.85;
+	const interpolationFraction = 0.15 + (1 - streamline) * 0.85;
 	let normalizedPoints = Array.isArray(inputPoints[0])
 		? inputPoints
 		: inputPoints.map(
@@ -415,7 +418,7 @@ function strokePoints(inputPoints, options = {}) {
 				],
 			);
 	if (normalizedPoints.length === 2) {
-		let endPoint = normalizedPoints[1];
+		const endPoint = normalizedPoints[1];
 		normalizedPoints = normalizedPoints.slice(0, -1);
 		for (let subdivisionIndex = 1; subdivisionIndex < 5; subdivisionIndex++) {
 			normalizedPoints.push(
@@ -432,7 +435,7 @@ function strokePoints(inputPoints, options = {}) {
 			],
 		];
 	}
-	let points = [
+	const points = [
 		{
 			point: [normalizedPoints[0][0], normalizedPoints[0][1]],
 			pressure: hasPressure(normalizedPoints[0][2])
@@ -446,9 +449,9 @@ function strokePoints(inputPoints, options = {}) {
 	let hasReachedMinimumLength = false;
 	let runningLength = 0;
 	let previousPoint = points[0];
-	let lastPointIndex = normalizedPoints.length - 1;
+	const lastPointIndex = normalizedPoints.length - 1;
 	for (let pointIndex = 1; pointIndex < normalizedPoints.length; pointIndex++) {
-		let point =
+		const point =
 			isComplete && pointIndex === lastPointIndex
 				? [normalizedPoints[pointIndex][0], normalizedPoints[pointIndex][1]]
 				: lerpVector(
@@ -459,7 +462,7 @@ function strokePoints(inputPoints, options = {}) {
 		if (equalVectors(previousPoint.point, point)) {
 			continue;
 		}
-		let distance = vectorDistance(point, previousPoint.point);
+		const distance = vectorDistance(point, previousPoint.point);
 		runningLength += distance;
 		if (pointIndex < lastPointIndex && !hasReachedMinimumLength) {
 			if (runningLength < size) {

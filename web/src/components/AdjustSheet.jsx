@@ -11,12 +11,12 @@ var scaleFraction = (scale) =>
 var sliderThumbSize = 24;
 var scaleSnapThreshold = 0.02;
 function AdjustmentControls() {
-	let { state, actions } = useWrite();
-	let { project, alignment, picked: pickedCodepoint } = state;
-	let letters = allCodepoints.flatMap((glyphCodepoint) => {
-		let drawing = project.glyphs[glyphCodepoint]?.drawings[0];
-		let glyphInk = drawing && inkBounds(glyphCodepoint, drawing);
-		let glyphPlacement = alignment.place.get(glyphCodepoint);
+	const { state, actions } = useWrite();
+	const { project, alignment, picked: pickedCodepoint } = state;
+	const letters = allCodepoints.flatMap((glyphCodepoint) => {
+		const drawing = project.glyphs[glyphCodepoint]?.drawings[0];
+		const glyphInk = drawing && inkBounds(glyphCodepoint, drawing);
+		const glyphPlacement = alignment.place.get(glyphCodepoint);
 		if (drawing && glyphInk && glyphPlacement) {
 			return [
 				{
@@ -31,7 +31,7 @@ function AdjustmentControls() {
 			return [];
 		}
 	});
-	let selectedLetter =
+	const selectedLetter =
 		letters.find((candidateLetter) => candidateLetter.cp === pickedCodepoint) ??
 		letters[0];
 	if (!selectedLetter) {
@@ -39,8 +39,8 @@ function AdjustmentControls() {
 			<p className="px-5 pb-2 text-[0.9375rem] leading-5 text-pretty text-paper/90 lg:px-6">{`Write a letter first. Your letters line up here, ready to adjust.`}</p>
 		);
 	}
-	let { fix: selectedFix } = selectedLetter;
-	let selectedCharacter = characterFor(selectedLetter.cp);
+	const { fix: selectedFix } = selectedLetter;
+	const selectedCharacter = characterFor(selectedLetter.cp);
 	return (
 		<div className="flex flex-col gap-3.5 px-5 pt-1.5 pb-4 lg:px-6">
 			<AlignmentPreview
@@ -72,7 +72,7 @@ function AdjustmentControls() {
 						step={0.01}
 						value={selectedFix.scale}
 						onChange={(event) => {
-							let nextScale = Number(event.target.value);
+							const nextScale = Number(event.target.value);
 							actions.setFix(selectedLetter.cp, {
 								...selectedFix,
 								scale:
@@ -114,7 +114,7 @@ function AdjustmentControls() {
 	);
 }
 function AdjustSheet() {
-	let { state, actions } = useWrite();
+	const { state, actions } = useWrite();
 	return (
 		<Panel
 			open={state.sheet === `adjust`}
@@ -132,6 +132,7 @@ function AdjustSheet() {
 					type="checkbox"
 					role="switch"
 					checked={state.project.settings.tidy}
+					aria-checked={state.project.settings.tidy}
 					onChange={(event) => actions.setTidy(event.target.checked)}
 					className="switch shrink-0"
 				/>

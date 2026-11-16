@@ -8,11 +8,11 @@ function idbRequest(request) {
 }
 function createStore(databaseName, storeName) {
 	let databasePromise;
-	let openDatabase = () => {
+	const openDatabase = () => {
 		if (databasePromise) {
 			return databasePromise;
 		}
-		let openRequest = indexedDB.open(databaseName);
+		const openRequest = indexedDB.open(databaseName);
 		openRequest.onupgradeneeded = () =>
 			openRequest.result.createObjectStore(storeName);
 		databasePromise = idbRequest(openRequest);
@@ -49,7 +49,7 @@ function writeStored(key, storedValue, store = getStore()) {
 }
 var projectStorageKey = `project:spike-0000`;
 async function loadProject() {
-	let storedProject = await readStored(projectStorageKey);
+	const storedProject = await readStored(projectStorageKey);
 	if (storedProject === undefined) {
 		return undefined;
 	} else {

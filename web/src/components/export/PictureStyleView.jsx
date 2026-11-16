@@ -32,7 +32,7 @@ var paperMomentum = (velocity) =>
 var clampPaperIndex = (index, minIndex, maxIndex) =>
 	Math.min(maxIndex, Math.max(minIndex, index));
 function PaperCard({ paper, at: cardIndex, x, input: pictureInput, onPick }) {
-	let scale = useTransform(
+	const scale = useTransform(
 		x,
 		(offsetX) =>
 			1 -
@@ -63,18 +63,18 @@ function PaperCard({ paper, at: cardIndex, x, input: pictureInput, onPick }) {
 	);
 }
 function PaperCarousel({ input: pictureInput, onPick }) {
-	let selectedIndex = paperStyles.findIndex(
+	const selectedIndex = paperStyles.findIndex(
 		(paperStyle) => paperStyle.id === pictureInput.style.paper,
 	);
-	let maxIndex = paperStyles.length - 1;
-	let reduceMotion = useReducedMotion();
-	let x = useMotionValue(-selectedIndex * paperCardStep);
-	let animationRef = React.useRef(undefined);
-	let wasDraggedRef = React.useRef(false);
-	let velocityRef = React.useRef(0);
-	let animateToIndex = (nextIndex) => {
+	const maxIndex = paperStyles.length - 1;
+	const reduceMotion = useReducedMotion();
+	const x = useMotionValue(-selectedIndex * paperCardStep);
+	const animationRef = React.useRef(undefined);
+	const wasDraggedRef = React.useRef(false);
+	const velocityRef = React.useRef(0);
+	const animateToIndex = (nextIndex) => {
 		animationRef.current?.stop();
-		let initialVelocity = velocityRef.current;
+		const initialVelocity = velocityRef.current;
 		velocityRef.current = 0;
 		animationRef.current = animate(
 			x,
@@ -89,7 +89,7 @@ function PaperCarousel({ input: pictureInput, onPick }) {
 					},
 		);
 	};
-	let animateSelectedIndex = React.useEffectEvent(animateToIndex);
+	const animateSelectedIndex = React.useEffectEvent(animateToIndex);
 	React.useEffect(() => {
 		animateSelectedIndex(selectedIndex);
 		return () => animationRef.current?.stop();
@@ -113,9 +113,9 @@ function PaperCarousel({ input: pictureInput, onPick }) {
 				dragMomentum={false}
 				onPointerDown={() => (wasDraggedRef.current = false)}
 				onDragStart={() => (wasDraggedRef.current = true)}
-				onDragEnd={(dragEvent, { velocity: dragVelocity }) => {
+				onDragEnd={(_dragEvent, { velocity: dragVelocity }) => {
 					velocityRef.current = dragVelocity.x;
-					let projectedIndex = clampPaperIndex(
+					const projectedIndex = clampPaperIndex(
 						Math.round(
 							-(x.get() + paperMomentum(dragVelocity.x)) / paperCardStep,
 						),
@@ -180,7 +180,7 @@ function PaperSwatch({ paper }) {
 	);
 }
 function PaperPicker({ picked: pickedPaper, onPick }) {
-	let labelId = React.useId();
+	const labelId = React.useId();
 	return (
 		<div
 			role="radiogroup"
@@ -231,8 +231,8 @@ function PaperPicker({ picked: pickedPaper, onPick }) {
 	);
 }
 function RulingPicker({ picked: pickedRuling, onPick }) {
-	let labelId = React.useId();
-	let selectedIndex = rulingStyles.findIndex(
+	const labelId = React.useId();
+	const selectedIndex = rulingStyles.findIndex(
 		(ruling) => ruling.id === pickedRuling,
 	);
 	return (
@@ -271,7 +271,7 @@ function RulingPicker({ picked: pickedRuling, onPick }) {
 	);
 }
 function PictureSaveButton({ picture: pictureDownload }) {
-	let { shares, sent, empty, send } = pictureDownload;
+	const { shares, sent, empty, send } = pictureDownload;
 	return (
 		<SheetPrimaryButton
 			onClick={send}
@@ -295,9 +295,9 @@ function PictureSaveButton({ picture: pictureDownload }) {
 	);
 }
 function PictureStyleView({ input: pictureInput, picture: pictureDownload }) {
-	let { actions } = useWrite();
-	let containerRef = React.useRef(null);
-	let { paper, ruling } = pictureInput.style;
+	const { actions } = useWrite();
+	const containerRef = React.useRef(null);
+	const { paper, ruling } = pictureInput.style;
 	React.useEffect(() => {
 		containerRef.current
 			?.querySelector(`input[name="picture-paper"]:checked`)

@@ -11,23 +11,23 @@ var sampleCharacters = `hamburgefonstiv`;
 var sampleCount = 14;
 var sampleSpacing = 90;
 function projectSampleLayout(project) {
-	let { place: placements, lines } = alignProject(project);
-	let drawingForCodepoint = (glyphCodepoint) =>
+	const { place: placements, lines } = alignProject(project);
+	const drawingForCodepoint = (glyphCodepoint) =>
 		firstDrawing(project.glyphs[glyphCodepoint]);
-	let sampleCodepoints = [...sampleCharacters]
+	const sampleCodepoints = [...sampleCharacters]
 		.map((character) => character.charCodeAt(0))
 		.filter(drawingForCodepoint);
-	let selectedCodepoints = (
+	const selectedCodepoints = (
 		sampleCodepoints.length >= 5
 			? sampleCodepoints
 			: allCodepoints.filter(drawingForCodepoint)
 	).slice(0, sampleCount);
 	let cursorX = 0;
-	let letters = [];
-	for (let glyphCodepoint of selectedCodepoints) {
-		let drawing = drawingForCodepoint(glyphCodepoint);
-		let bounds = inkBounds(glyphCodepoint, drawing);
-		let placement = placements.get(glyphCodepoint);
+	const letters = [];
+	for (const glyphCodepoint of selectedCodepoints) {
+		const drawing = drawingForCodepoint(glyphCodepoint);
+		const bounds = inkBounds(glyphCodepoint, drawing);
+		const placement = placements.get(glyphCodepoint);
 		if (bounds && placement) {
 			letters.push({
 				cp: glyphCodepoint,
@@ -40,7 +40,7 @@ function projectSampleLayout(project) {
 			cursorX += (bounds.xMax - bounds.xMin) * placement.scale + sampleSpacing;
 		}
 	}
-	let top = 920 - Math.max(lines.ascender, lines.capHeight) - 60;
+	const top = 920 - Math.max(lines.ascender, lines.capHeight) - 60;
 	return {
 		letters: letters,
 		width: Math.max(1, cursorX - sampleSpacing),
@@ -49,7 +49,7 @@ function projectSampleLayout(project) {
 	};
 }
 function ProjectSample({ project, label }) {
-	let { letters, width, top, bottom } = React.useMemo(
+	const { letters, width, top, bottom } = React.useMemo(
 		() => projectSampleLayout(project),
 		[project],
 	);

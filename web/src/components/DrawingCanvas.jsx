@@ -12,13 +12,13 @@ var hasPenPressure = ({ pointerType, pressure }) =>
 var roundPrecision = (number, decimalPlaces) =>
 	Math.round(number * 10 ** decimalPlaces) / 10 ** decimalPlaces;
 function DrawingCanvas({ strokes, onStroke, label, className, children }) {
-	let canvas = React.useRef(null);
-	let livePath = React.useRef(null);
-	let activeStroke = React.useRef(null);
-	let animationFrame = React.useRef(0);
+	const canvas = React.useRef(null);
+	const livePath = React.useRef(null);
+	const activeStroke = React.useRef(null);
+	const animationFrame = React.useRef(0);
 	React.useEffect(() => {
-		let canvasElement = canvas.current;
-		let preventTouchDefault = (event) => event.preventDefault();
+		const canvasElement = canvas.current;
+		const preventTouchDefault = (event) => event.preventDefault();
 		canvasElement.addEventListener(`touchstart`, preventTouchDefault, {
 			passive: false,
 		});
@@ -31,9 +31,9 @@ function DrawingCanvas({ strokes, onStroke, label, className, children }) {
 			cancelAnimationFrame(animationFrame.current);
 		};
 	}, []);
-	let paintStroke = () => {
+	const paintStroke = () => {
 		animationFrame.current = 0;
-		let stroke = activeStroke.current;
+		const stroke = activeStroke.current;
 		livePath.current?.setAttribute(
 			`d`,
 			stroke
@@ -41,22 +41,22 @@ function DrawingCanvas({ strokes, onStroke, label, className, children }) {
 				: ``,
 		);
 	};
-	let schedulePaint = () => {
+	const schedulePaint = () => {
 		animationFrame.current ||= requestAnimationFrame(paintStroke);
 	};
-	let cancelStroke = () => {
+	const cancelStroke = () => {
 		activeStroke.current = null;
 		cancelAnimationFrame(animationFrame.current);
 		animationFrame.current = 0;
 		livePath.current?.setAttribute(`d`, ``);
 	};
-	let eventPoint = (event, { rect, input }) => [
+	const eventPoint = (event, { rect, input }) => [
 		roundPrecision(((event.clientX - rect.left) / rect.width) * stageWidth, 1),
 		roundPrecision(((event.clientY - rect.top) / rect.height) * stageHeight, 1),
 		input === `pen` ? roundPrecision(event.pressure, 2) : 0.5,
 	];
-	let appendPoint = (stroke, point) => {
-		let lastPoint = stroke.pts[stroke.pts.length - 1];
+	const appendPoint = (stroke, point) => {
+		const lastPoint = stroke.pts[stroke.pts.length - 1];
 		if (
 			stroke.input === `pen` &&
 			stroke.pts.length > 1 &&
@@ -79,7 +79,7 @@ function DrawingCanvas({ strokes, onStroke, label, className, children }) {
 			viewBox={`0 0 ${stageWidth} ${stageHeight}`}
 			className={`block aspect-2/1 w-full touch-none select-none [-webkit-touch-callout:none] ${className ?? ``}`}
 			onPointerDown={(event) => {
-				let isPen = event.pointerType === `pen`;
+				const isPen = event.pointerType === `pen`;
 				if (isPen) {
 					hasUsedPen = true;
 				}
@@ -96,17 +96,17 @@ function DrawingCanvas({ strokes, onStroke, label, className, children }) {
 					cancelStroke();
 				}
 				event.currentTarget.setPointerCapture(event.pointerId);
-				let canvasRect = event.currentTarget.getBoundingClientRect();
-				let strokeInput = hasPenPressure(event.nativeEvent)
+				const canvasRect = event.currentTarget.getBoundingClientRect();
+				const strokeInput = hasPenPressure(event.nativeEvent)
 					? `pen`
 					: event.pointerType === `touch`
 						? `touch`
 						: `mouse`;
-				let firstPoint = eventPoint(event.nativeEvent, {
+				const firstPoint = eventPoint(event.nativeEvent, {
 					rect: canvasRect,
 					input: strokeInput,
 				});
-				let { pointerId, pointerType } = event;
+				const { pointerId, pointerType } = event;
 				activeStroke.current = {
 					pointerId: pointerId,
 					pointerType: pointerType,
@@ -119,14 +119,14 @@ function DrawingCanvas({ strokes, onStroke, label, className, children }) {
 				schedulePaint();
 			}}
 			onPointerMove={(event) => {
-				let event2 = activeStroke.current;
+				const event2 = activeStroke.current;
 				if (!event2 || event.pointerId !== event2.pointerId) {
 					return;
 				}
-				let coalescedEvents = isIOS
+				const coalescedEvents = isIOS
 					? []
 					: (event.nativeEvent.getCoalescedEvents?.() ?? []);
-				for (let pointerEvent of coalescedEvents.length
+				for (const pointerEvent of coalescedEvents.length
 					? coalescedEvents
 					: [event.nativeEvent]) {
 					appendPoint(event2, eventPoint(pointerEvent, event2));
@@ -134,7 +134,7 @@ function DrawingCanvas({ strokes, onStroke, label, className, children }) {
 				schedulePaint();
 			}}
 			onPointerUp={(event) => {
-				let event2 = activeStroke.current;
+				const event2 = activeStroke.current;
 				if (event2 && event.pointerId === event2.pointerId) {
 					cancelStroke();
 					onStroke({

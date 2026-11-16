@@ -17,7 +17,7 @@ var downloadFormats = {
 var formatBytes = (byteLength) =>
 	`${Math.max(1, Math.round(byteLength / 1024))} KB`;
 function downloadBlob(blob, fileName) {
-	let downloadUrl = URL.createObjectURL(blob);
+	const downloadUrl = URL.createObjectURL(blob);
 	Object.assign(document.createElement(`a`), {
 		href: downloadUrl,
 		download: fileName,
@@ -32,8 +32,8 @@ var downloadFont = (fontBytes, fileName, format) =>
 		fileName,
 	);
 function useAsyncBuffer(sourceBuffer, transformBuffer) {
-	let [bufferState, setBufferState] = React.useState();
-	let runTransform = React.useEffectEvent(transformBuffer);
+	const [bufferState, setBufferState] = React.useState();
+	const runTransform = React.useEffectEvent(transformBuffer);
 	React.useEffect(() => {
 		if (!sourceBuffer) {
 			return;
@@ -58,22 +58,22 @@ function useAsyncBuffer(sourceBuffer, transformBuffer) {
 }
 var freshBuffer = ({ buffer, fresh }) => (fresh ? buffer : undefined);
 function useFontDownloads(project, alignment, liveFont) {
-	let currentOtf = liveFont?.of === project ? liveFont.otf : undefined;
-	let packedOtf = useAsyncBuffer(currentOtf, (otfBuffer) =>
+	const currentOtf = liveFont?.of === project ? liveFont.otf : undefined;
+	const packedOtf = useAsyncBuffer(currentOtf, (otfBuffer) =>
 		packProjectFont(otfBuffer, project),
 	);
-	let compressedWoff2 = useAsyncBuffer(currentOtf, convertWoff2);
+	const compressedWoff2 = useAsyncBuffer(currentOtf, convertWoff2);
 	return {
 		otf: packedOtf.buffer,
 		woff2: compressedWoff2.buffer,
 		get: async (format) => {
-			let cachedBuffer = freshBuffer(
+			const cachedBuffer = freshBuffer(
 				format === `otf` ? packedOtf : compressedWoff2,
 			);
 			if (cachedBuffer) {
 				return cachedBuffer;
 			}
-			let builtFont = await buildProjectFont(project, alignment);
+			const builtFont = await buildProjectFont(project, alignment);
 			return (
 				await (format === `otf`
 					? packProjectFont(builtFont.buffer, project)

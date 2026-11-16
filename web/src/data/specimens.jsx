@@ -40,9 +40,9 @@ var isLowercase = (character) => character >= `a` && character <= `z`;
 var isUppercase = (character) => character >= `A` && character <= `Z`;
 var isDigit = (character) => character >= `0` && character <= `9`;
 function wordsForCharacter(character, isDrawn, limit) {
-	let lowercaseCharacter = character.toLowerCase();
-	let coverageFor = (word) => {
-		let otherCharacters = [...word].filter(
+	const lowercaseCharacter = character.toLowerCase();
+	const coverageFor = (word) => {
+		const otherCharacters = [...word].filter(
 			(candidateCharacter) => candidateCharacter !== lowercaseCharacter,
 		);
 		if (otherCharacters.length) {
@@ -51,7 +51,7 @@ function wordsForCharacter(character, isDrawn, limit) {
 			return 1;
 		}
 	};
-	let rankedWords = specimenWords
+	const rankedWords = specimenWords
 		.filter((word) => word.includes(lowercaseCharacter))
 		.map((word, wordIndex) => ({
 			w: word,
